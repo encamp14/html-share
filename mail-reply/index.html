@@ -103,6 +103,7 @@
           <label>お客様メール</label><input type="text" id="f-email" placeholder="返信の宛先（489banではなくお客様本人）">
           <label>ペット</label><input type="text" id="f-pet" placeholder="例：チワックス1頭（いなければ空欄）">
           <label>記念日プラン</label><input type="text" id="f-celeb" placeholder="飾り付け・シャンパンタワー等があれば「あり」">
+          <label>送迎</label><input type="text" id="f-pickup" placeholder="あり／空欄（ありなら「安全運転で」を省く）">
           <label>プラン</label><input type="text" id="f-plan" placeholder="プラン名">
         </div>
       </div>
@@ -272,6 +273,21 @@ document.querySelectorAll(".tab").forEach(t=>{
 
 // ================= 読み取り =================
 function pick(re,txt){const m=txt.match(re);return m?m[1].trim():"";}
+// 送迎ありか判定（送迎ありなら「安全運転で」の一文を省く）
+function hasPickup(t){
+  // 変更通知の【変更前】は古い数字なので各行から除去してから、現在の「× N =」を数える
+  const cleaned=t.replace(/【変更前】[^\n]*/g,"");
+  let sougei=0, hasLine=false;
+  [...cleaned.matchAll(/無料送迎[\s\S]{0,120}?[×✕xX][\s　]*(\d+)[\s　]*[=＝]/g)].forEach(m=>{hasLine=true;sougei+=parseInt(m[1]);});
+  if(hasLine) return sougei>0; // 489banの明細：現在の送迎人数が1以上なら送迎あり
+  // 一休の質問・回答形式「無料送迎の希望 ⇒ 不要／希望」
+  if(/送迎/.test(t)){
+    const seg=(t.match(/送迎[\s\S]{0,60}/)||[""])[0];
+    if(/不要|なし|利用しない/.test(seg)) return false;
+    return /希望|要る|集合|\d時/.test(seg);
+  }
+  return false; // 送迎の記載なし（じゃらん・楽天など）＝判定不能→送迎なし扱い（安全運転の一文を入れる）
+}
 function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
@@ -338,12 +354,13 @@ function parseMail(){
   // 反映
   setV("f-name",name); setV("f-date",date); setV("f-people",people.join("・"));
   setV("f-total",total||""); setV("f-from",from); setV("f-pref",pref); setV("f-email",email);
-  setV("f-pet",pet); setV("f-celeb",celeb); setV("f-plan",plan);
+  setV("f-pet",pet); setV("f-celeb",celeb); setV("f-pickup",hasPickup(t)?"あり":""); setV("f-plan",plan);
   // 警告
   const w=[];
   if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
   if(window.isIkyu) w.push("📮 一休の予約です。返信は<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
+  if(hasPickup(t)) w.push("🚐 送迎ありの予約です。文末の「遠路となりますので…安全運転で」の一文は省きます。");
   if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
   if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
   if(from==="地元") w.push("🏠 長野県内のお客様なので「遠路」の表現は外します。");
@@ -431,7 +448,12 @@ function generate(){
   // 7 コンシェルジュ（固定）
   L.push("私たちは当地方のコンシェルジュでもありますので、何かあればいろいろ聞いてください。ちなみに私は前職で長年この地方の新聞記者をしておりました。");
   // 8 結び
-  L.push("それでは、スタッフ一同お会いできるのを楽しみにしております（＾＾）"+(isLocal?"お気をつけてお越しください。":"遠路となりますので休憩を取りながら安全運転でお越しください。"));
+  let closer="それでは、スタッフ一同お会いできるのを楽しみにしております（＾＾）";
+  const pickup=/あり|要|希望/.test(gV("f-pickup"));
+  if(pickup){ /* 送迎あり＝「安全運転で」の一文は入れない */ }
+  else if(isLocal) closer+="お気をつけてお越しください。";
+  else closer+="遠路となりますので休憩を取りながら安全運転でお越しください。";
+  L.push(closer);
 
   const email=gV("f-email");
   // 宛先・件名は本文と分けて上の欄に表示（本文はそのままコピーできるように）
