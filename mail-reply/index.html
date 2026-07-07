@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📧 メール返信係 — 予約歓迎メールメーカー</title>
+<style>
+  :root{
+    --rose:#b07a83; --rose-dark:#8a5a63; --rose-bg:#f7eef0;
+    --green:#7a8a6a; --green-bg:#eef2e8;
+    --ink:#3a3230; --paper:#fdfcfa; --line:#e8dfe1;
+    --warn:#c0392b; --warn-bg:#fdf0ee;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Hiragino Sans',sans-serif;background:var(--paper);color:var(--ink);line-height:1.7}
+  header{background:linear-gradient(135deg,var(--rose-bg),var(--green-bg));padding:20px 24px;border-bottom:2px solid var(--line)}
+  header h1{font-size:1.3rem;color:var(--rose-dark)}
+  header p{font-size:.85rem;color:#8a7d7a;margin-top:2px}
+  .tabs{display:flex;gap:4px;padding:12px 24px 0;background:transparent;flex-wrap:wrap}
+  .tab{padding:9px 18px;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;background:#f3edee;cursor:pointer;font-size:.92rem;color:#7a6d6a}
+  .tab.active{background:#fff;color:var(--rose-dark);font-weight:600;border-color:var(--rose)}
+  .panel{display:none;padding:20px 24px 60px;max-width:1100px}
+  .panel.active{display:block}
+  h2{font-size:1.05rem;color:var(--green);border-left:5px solid var(--green);padding-left:8px;margin:18px 0 10px}
+  textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.9rem;font-family:inherit;background:#fff;resize:vertical}
+  textarea:focus,input:focus{outline:2px solid var(--rose);outline-offset:1px}
+  input[type=text]{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.9rem;font-family:inherit;width:100%}
+  .btn{display:inline-block;border:none;border-radius:10px;padding:11px 22px;font-size:.95rem;cursor:pointer;font-family:inherit;font-weight:600}
+  .btn-main{background:var(--rose);color:#fff}
+  .btn-main:hover{background:var(--rose-dark)}
+  .btn-sub{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .btn-small{padding:6px 14px;font-size:.83rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0}
+  .fields{display:grid;grid-template-columns:110px 1fr;gap:8px 10px;align-items:center;font-size:.9rem}
+  .fields label{color:#8a7d7a;font-size:.83rem;text-align:right}
+  .warnbox{background:var(--warn-bg);border:1px solid #eacfca;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.88rem;color:var(--warn)}
+  .okbox{background:var(--green-bg);border:1px solid #cfdcc0;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.88rem;color:var(--green)}
+  .note{font-size:.82rem;color:#9a8d8a;margin:6px 0}
+  .badge{display:inline-block;background:var(--rose-bg);color:var(--rose-dark);border-radius:20px;padding:2px 12px;font-size:.78rem;margin:2px 4px 2px 0}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;margin:8px 0}
+  th{background:var(--rose-bg);color:var(--rose-dark);padding:8px;text-align:left;border:1px solid var(--line)}
+  td{padding:8px;border:1px solid var(--line);vertical-align:top}
+  .month-row td:first-child{white-space:nowrap;font-weight:600;color:var(--green)}
+  .month-row textarea{min-height:52px;font-size:.85rem}
+  .temp-inputs{display:flex;gap:6px;align-items:center;font-size:.8rem;margin-top:4px}
+  .temp-inputs input{width:70px}
+  #output{min-height:420px;font-size:.92rem;line-height:1.9}
+  .toolbar{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+  .copied{background:var(--green)!important;color:#fff!important}
+  .log-item{border-bottom:1px dashed var(--line);padding:8px 4px;font-size:.88rem;display:flex;justify-content:space-between;gap:10px}
+  .log-item .del{color:#c0392b;cursor:pointer;font-size:.8rem;white-space:nowrap}
+  .steps{counter-reset:s;font-size:.9rem}
+  .steps li{list-style:none;margin:8px 0;padding-left:34px;position:relative}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--rose);color:#fff;font-size:.8rem;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .privacy{background:#fff;border:2px solid var(--green);border-radius:14px;padding:14px 18px;margin:14px 0;font-size:.88rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
+  <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-p="make">✉️ メールを作る</div>
+  <div class="tab" data-p="season">🗓 季節メモを育てる</div>
+  <div class="tab" data-p="pdca">📈 改善ログ（PDCA）</div>
+  <div class="tab" data-p="help">❓ 使い方</div>
+</div>
+
+<!-- ============ 作る ============ -->
+<div class="panel active" id="p-make">
+  <div class="grid2">
+    <div>
+      <h2>① 予約通知を貼り付け</h2>
+      <textarea id="rawmail" rows="14" placeholder="489banの予約通知メールをここにまるごと貼り付けてください"></textarea>
+      <div class="toolbar">
+        <button class="btn btn-main" onclick="parseMail()">🔍 読み取る</button>
+        <button class="btn btn-sub btn-small" onclick="clearAll()">クリア</button>
+      </div>
+
+      <h2>② 読み取り結果（直せます）</h2>
+      <div class="card">
+        <div class="fields">
+          <label>宛名（姓）</label><input type="text" id="f-name" placeholder="例：山田">
+          <label>宿泊日</label><input type="text" id="f-date" placeholder="例：2026/07/26">
+          <label>人数の内訳</label><input type="text" id="f-people" placeholder="例：大人2名・小学生2名">
+          <label>合計人数</label><input type="text" id="f-total" placeholder="例：4">
+          <label>出発地（市）</label><input type="text" id="f-from" placeholder="例：横浜（長野県内なら「地元」）">
+          <label>都道府県</label><input type="text" id="f-pref" placeholder="例：神奈川（標高のたとえに使用）">
+          <label>お客様メール</label><input type="text" id="f-email" placeholder="返信の宛先（489banではなくお客様本人）">
+          <label>ペット</label><input type="text" id="f-pet" placeholder="例：チワックス1頭（いなければ空欄）">
+          <label>記念日プラン</label><input type="text" id="f-celeb" placeholder="飾り付け・シャンパンタワー等があれば「あり」">
+          <label>プラン</label><input type="text" id="f-plan" placeholder="プラン名">
+        </div>
+      </div>
+      <div id="warnings"></div>
+    </div>
+
+    <div>
+      <h2>③ 歓迎メールの下書き</h2>
+      <div class="toolbar">
+        <button class="btn btn-main" onclick="generate()">✨ 下書きを作る</button>
+        <button class="btn btn-sub" id="copybtn" onclick="copyOut()">📋 コピー</button>
+        <button class="btn btn-sub btn-small" onclick="claudePrompt()">🤖 Claudeに磨いてもらう文をコピー</button>
+      </div>
+      <textarea id="output" placeholder="ここに下書きが出ます。手で直してからコピーしてOK"></textarea>
+      <p class="note" id="tempnote"></p>
+      <div id="tempbox" style="display:none;background:var(--green-bg);border:1px solid #cfdcc0;border-radius:10px;padding:9px 13px;margin:6px 0;font-size:.84rem">
+        <a id="jmalink" href="#" target="_blank" rel="noopener" style="color:var(--rose-dark);font-weight:600;text-decoration:none">📊 気象庁で日別平年気温を確認する</a>
+        <div class="temp-inputs" style="margin-top:7px">確認した数字で上書き：最高<input type="text" id="ov-hi"> ／ 最低<input type="text" id="ov-lo"> 度
+          <button class="btn btn-sub btn-small" onclick="saveOverride()">この日を記憶して反映</button></div>
+        <span id="ov-msg" class="note" style="color:var(--green)"></span>
+      </div>
+      <p class="note">⚠️ このアプリは下書きを作るだけ。送信は必ずGmailで、宛先を確かめてから。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 季節メモ ============ -->
+<div class="panel" id="p-season">
+  <h2>🗓 季節メモ（柳さんの実例だけを書く・想像で書かない）</h2>
+  <p class="note">柳さんの過去メールから「その月の自然・生き物・見どころ」を貼って保存。埋まっている月は自動で本文に入り、空欄の月は「※要確認」になります。</p>
+  <div class="okbox">🌡 <strong>気温は自動です。</strong>下の欄を空けておけば、気象庁の松本・月別平年値（1991〜2020年）が自動で入ります。柳さんが日別で調べた数字を入れたいときだけ、下の欄に上書きしてください（空欄＝気象庁の月平均を使用）。</div>
+  <table id="season-table"></table>
+  <div class="toolbar">
+    <button class="btn btn-main" onclick="saveSeason()">💾 季節メモを保存</button>
+    <span id="season-msg" class="note"></span>
+  </div>
+</div>
+
+<!-- ============ PDCA ============ -->
+<div class="panel" id="p-pdca">
+  <h2>📈 改善ログ（送ったあとの気づきを貯める）</h2>
+  <p class="note">「ここを直して送った」「お客様にこう言われた」を一言メモ。貯まったらClaudeに見せると型の改善案を出せます。お客様の名前は書かないこと。</p>
+  <div class="card">
+    <input type="text" id="log-input" placeholder="例：3月は残雪の描写を足したら喜ばれた／宛先ミスしかけた→確認欄を先に見る">
+    <div class="toolbar"><button class="btn btn-main btn-small" onclick="addLog()">＋ 記録する</button></div>
+    <div id="log-list"></div>
+  </div>
+  <h2>✅ 送信前チェックリスト</h2>
+  <div class="card" style="font-size:.9rem">
+    <label style="display:block;margin:4px 0"><input type="checkbox"> 宛先は<strong>お客様本人のアドレス</strong>（489ban宛になっていない）</label>
+    <label style="display:block;margin:4px 0"><input type="checkbox"> 名前・日付・人数が予約通知と合っている</label>
+    <label style="display:block;margin:4px 0"><input type="checkbox"> 「※要確認」が本文に残っていない</label>
+    <label style="display:block;margin:4px 0"><input type="checkbox"> 季節の描写が宿泊月と合っている</label>
+    <label style="display:block;margin:4px 0"><input type="checkbox"> 値引き・特別対応の約束を書いていない</label>
+  </div>
+</div>
+
+<!-- ============ 使い方 ============ -->
+<div class="panel" id="p-help">
+  <h2>❓ 使い方（3ステップ）</h2>
+  <ol class="steps">
+    <li>予約通知メールをまるごとコピーして、左の枠に貼って「🔍 読み取る」</li>
+    <li>読み取り結果を確認（間違っていたら直す）→「✨ 下書きを作る」</li>
+    <li>下書きを読んで直す →「📋 コピー」→ Gmailに貼って、<strong>宛先を確認して</strong>送信</li>
+  </ol>
+  <div class="privacy">
+    <strong>🔒 プライバシーについて</strong><br>
+    ・このアプリは<strong>インターネットに何も送りません</strong>。全部このMacの中で動きます。<br>
+    ・お客様の情報は<strong>保存されません</strong>（画面を閉じたら消えます）。保存されるのは季節メモ・改善ログだけ。<br>
+    ・改善ログにお客様の名前を書かないでください。
+  </div>
+  <h2>🌱 どんどん良くする方法（PDCA）</h2>
+  <ol class="steps">
+    <li><strong>Plan</strong>：季節メモに柳さんの実例を貯める（月が埋まるほど賢くなる）</li>
+    <li><strong>Do</strong>：予約が来たら下書きを作って送る</li>
+    <li><strong>Check</strong>：気づきを改善ログにメモ</li>
+    <li><strong>Act</strong>：たまったログをClaudeに見せて「型を改善して」と言う → メモを更新</li>
+  </ol>
+  <p class="note">🤖「Claudeに磨いてもらう文をコピー」ボタンを押すと、いまの下書きと読み取り情報が入った相談文がコピーされます。Claudeのチャットに貼れば、もっと自然な文に磨いてくれます。</p>
+</div>
+
+<script>
+// ================= 保存データ =================
+const DEFAULT_SEASON = {
+  1:{txt:"",hi:"",lo:""},2:{txt:"",hi:"",lo:""},3:{txt:"",hi:"",lo:""},
+  4:{txt:"",hi:"",lo:""},5:{txt:"",hi:"",lo:""},6:{txt:"",hi:"",lo:""},
+  7:{txt:"深緑となった木々の間に飾り付けたカラフルな傘。田園地帯では金色に色づいた麦の収穫が始まり、北アルプスの高い山も緑をまとって夏山の装いに。夜にはすぐ横にあるみどり湖の堰堤下の水路でたくさんのホタルが舞い、湖畔のヤナギに樹液を吸うカブトムシも見られます。夕方はヒグラシの鳴き声に包まれます。ネイチャーゲームやミニ縁日も開催。",hi:"",lo:""},
+  8:{txt:"",hi:"",lo:""},9:{txt:"",hi:"",lo:""},10:{txt:"",hi:"",lo:""},
+  11:{txt:"",hi:"",lo:""},12:{txt:"",hi:"",lo:""}
+};
+let season = JSON.parse(localStorage.getItem("mk_season")||"null") || DEFAULT_SEASON;
+let logs = JSON.parse(localStorage.getItem("mk_logs")||"[]");
+// 日付ごとの平年気温の上書き（気象庁で確認した本物の数字だけ。キー=MMDD）
+let dateOverrides = JSON.parse(localStorage.getItem("mk_dateov")||"{}");
+
+// 松本の月別平年気温（気象庁 松本観測所 1991-2020年平年値・出典 data.jma.go.jp block_no=47618）
+// ※これは「月の平均」。柳さんが日別で調べた数字があれば季節メモで上書きできます。
+const MATSU_NORMALS={
+ 1:{hi:"5.1",lo:"-4.9"},2:{hi:"6.6",lo:"-4.5"},3:{hi:"11.2",lo:"-1.0"},
+ 4:{hi:"17.9",lo:"4.4"},5:{hi:"23.6",lo:"10.4"},6:{hi:"26.4",lo:"15.4"},
+ 7:{hi:"30.0",lo:"19.8"},8:{hi:"31.4",lo:"20.5"},9:{hi:"26.2",lo:"16.2"},
+ 10:{hi:"19.8",lo:"9.2"},11:{hi:"13.9",lo:"2.6"},12:{hi:"8.0",lo:"-2.2"}
+};
+
+// 標高約830mの言い回し辞典（都道府県→そのまま本文に入る一文。数字は半角）
+// 「当施設は〔この文〕にあるので、これより1〜2度低くなります。」の〔〕に入る。
+// 神奈川の横浜・川崎・横須賀＝ランドマークタワー、その他の関東＋未登録県＝スカイツリー、長野・山梨＝比較なし。
+const HEIGHT_CLAUSE={
+ "愛知":"標高約830メートルの場所（ミッドランドスクエアの3.4倍）",
+ "大阪":"標高約830メートルの場所（あべのハルカスの2.8倍）",
+ "兵庫":"標高約830メートルの場所（シティタワー神戸三宮の4.4倍）",
+ "京都":"標高約830メートル（愛宕山の9合目あたり）の場所",
+ "三重":"標高約830メートルの場所（四日市港ポートビルの8.3倍・青山高原付近）",
+ "滋賀":"標高約830メートル（比叡山の山頂付近）の場所",
+ "岐阜":"標高約830メートルの場所（岐阜シティ・タワー43の5.1倍）",
+ "新潟":"標高約830メートルの場所（朱鷺メッセの5.9倍）",
+ "富山":"標高約830メートルの場所（タワー111の6.9倍）",
+ "石川":"標高約830メートルの場所（ポルテ金沢の6.4倍・白山高山植物園付近）",
+ "福井":"標高約830メートルの場所（FUKUMACHI BLOCKの6.9倍）"
+};
+
+// 松本の「日ごとの平年値」（気象庁ページの本物の数字。1991-2020）。全12ヶ月・全日。
+// 出典：気象庁 松本(block_no=47618) 日別平年値。2026-07取得。9月はスクショと全日一致で検証済。
+// 各月「最高/最低」を1日から順に並べたもの（負の最低気温は - つき）。
+const _DN_RAW={
+ 1:"6.0/-4.2 5.9/-4.3 5.9/-4.4 5.8/-4.4 5.7/-4.5 5.6/-4.6 5.5/-4.6 5.4/-4.7 5.3/-4.7 5.2/-4.8 5.1/-4.8 5.1/-4.8 5.0/-4.8 4.9/-4.8 4.9/-4.8 4.8/-4.9 4.7/-4.9 4.7/-4.9 4.7/-5.0 4.6/-5.0 4.6/-5.1 4.6/-5.1 4.7/-5.2 4.7/-5.2 4.7/-5.3 4.8/-5.3 4.8/-5.3 4.9/-5.3 5.0/-5.4 5.1/-5.4 5.1/-5.4",
+ 2:"5.2/-5.4 5.3/-5.4 5.4/-5.4 5.4/-5.3 5.5/-5.3 5.6/-5.2 5.7/-5.2 5.8/-5.1 5.8/-5.0 5.9/-4.9 6.0/-4.9 6.1/-4.8 6.2/-4.7 6.3/-4.6 6.4/-4.5 6.5/-4.4 6.7/-4.4 6.8/-4.2 7.0/-4.1 7.2/-4.0 7.3/-3.9 7.5/-3.7 7.7/-3.6 7.9/-3.4 8.1/-3.2 8.3/-3.1 8.4/-2.9 8.6/-2.8",
+ 3:"8.8/-2.6 8.9/-2.5 9.1/-2.4 9.2/-2.2 9.4/-2.2 9.5/-2.1 9.7/-2.0 9.8/-1.9 10.0/-1.9 10.2/-1.8 10.4/-1.7 10.5/-1.6 10.8/-1.5 11.0/-1.4 11.2/-1.3 11.3/-1.2 11.5/-1.0 11.7/-0.9 11.8/-0.8 12.0/-0.6 12.1/-0.5 12.3/-0.4 12.4/-0.2 12.6/-0.1 12.8/0.0 13.0/0.2 13.2/0.4 13.4/0.5 13.7/0.7 14.0/0.9 14.3/1.1",
+ 4:"14.5/1.3 14.8/1.6 15.1/1.8 15.3/2.0 15.6/2.2 15.8/2.4 16.1/2.6 16.3/2.8 16.5/3.0 16.7/3.3 16.9/3.5 17.2/3.7 17.4/3.9 17.6/4.2 17.9/4.4 18.1/4.6 18.3/4.8 18.5/5.1 18.7/5.3 18.9/5.5 19.1/5.6 19.3/5.8 19.5/6.0 19.8/6.2 20.0/6.4 20.2/6.6 20.5/6.8 20.7/7.0 21.0/7.2 21.3/7.5",
+ 5:"21.5/7.7 21.8/8.0 22.0/8.2 22.2/8.4 22.4/8.7 22.5/8.8 22.6/9.0 22.7/9.2 22.8/9.3 22.9/9.4 23.0/9.6 23.0/9.7 23.1/9.8 23.2/9.9 23.4/10.1 23.5/10.2 23.6/10.4 23.8/10.5 23.9/10.7 24.1/10.9 24.2/11.0 24.3/11.2 24.4/11.3 24.5/11.5 24.6/11.7 24.7/11.8 24.8/12.0 24.8/12.1 24.9/12.2 25.0/12.4 25.1/12.5",
+ 6:"25.2/12.7 25.3/12.9 25.4/13.0 25.5/13.2 25.6/13.4 25.6/13.6 25.7/13.8 25.8/14.0 25.8/14.2 25.9/14.4 26.0/14.6 26.0/14.8 26.1/15.0 26.2/15.1 26.2/15.3 26.3/15.5 26.4/15.7 26.4/15.8 26.5/16.0 26.6/16.2 26.7/16.4 26.8/16.6 27.0/16.8 27.1/17.0 27.3/17.2 27.4/17.4 27.6/17.6 27.8/17.8 28.0/18.0 28.1/18.1",
+ 7:"28.2/18.3 28.4/18.4 28.5/18.6 28.6/18.7 28.7/18.8 28.8/19.0 28.9/19.1 29.0/19.2 29.1/19.3 29.3/19.4 29.4/19.5 29.5/19.5 29.6/19.6 29.8/19.7 29.9/19.8 30.0/19.8 30.2/19.9 30.3/20.0 30.4/20.1 30.6/20.1 30.7/20.2 30.8/20.3 31.0/20.4 31.1/20.5 31.2/20.6 31.3/20.7 31.4/20.7 31.6/20.8 31.7/20.9 31.8/20.9 31.9/21.0",
+ 8:"32.0/21.0 32.0/21.0 32.1/21.1 32.1/21.1 32.2/21.1 32.2/21.1 32.1/21.0 32.1/21.0 32.0/21.0 32.0/21.0 31.9/20.9 31.8/20.9 31.7/20.8 31.6/20.8 31.6/20.7 31.5/20.7 31.4/20.6 31.3/20.5 31.2/20.5 31.1/20.4 31.0/20.3 30.9/20.2 30.8/20.1 30.6/20.0 30.5/19.9 30.4/19.8 30.3/19.7 30.1/19.6 30.0/19.5 29.8/19.4 29.7/19.3",
+ 9:"29.5/19.1 29.4/19.0 29.2/18.9 29.0/18.8 28.8/18.6 28.6/18.5 28.4/18.3 28.2/18.1 28.0/17.9 27.7/17.7 27.5/17.5 27.2/17.3 27.0/17.1 26.7/16.8 26.4/16.5 26.1/16.3 25.9/16.0 25.6/15.7 25.3/15.4 25.0/15.1 24.7/14.8 24.4/14.6 24.2/14.3 23.9/14.0 23.7/13.8 23.5/13.6 23.3/13.4 23.1/13.2 23.0/13.0 22.8/12.8",
+ 10:"22.6/12.6 22.4/12.5 22.3/12.3 22.1/12.1 21.9/11.9 21.8/11.7 21.6/11.5 21.4/11.3 21.3/11.0 21.1/10.8 20.9/10.5 20.7/10.2 20.5/10.0 20.3/9.7 20.1/9.4 19.9/9.2 19.6/8.9 19.4/8.6 19.2/8.4 19.0/8.1 18.7/7.9 18.5/7.6 18.3/7.4 18.1/7.1 17.9/6.9 17.7/6.6 17.6/6.4 17.4/6.1 17.3/5.8 17.1/5.6 17.0/5.4",
+ 11:"16.8/5.1 16.7/4.9 16.6/4.7 16.4/4.6 16.2/4.4 16.0/4.2 15.8/4.1 15.6/3.9 15.4/3.8 15.1/3.6 14.9/3.5 14.6/3.3 14.3/3.1 14.1/2.9 13.9/2.7 13.6/2.5 13.4/2.3 13.2/2.1 12.9/1.9 12.7/1.7 12.6/1.5 12.4/1.4 12.2/1.2 12.0/1.1 11.9/0.9 11.7/0.8 11.6/0.7 11.4/0.6 11.3/0.4 11.1/0.3",
+ 12:"10.9/0.2 10.7/0.0 10.5/-0.2 10.2/-0.3 10.0/-0.5 9.7/-0.7 9.5/-0.9 9.3/-1.1 9.0/-1.3 8.8/-1.5 8.6/-1.6 8.4/-1.8 8.3/-2.0 8.1/-2.1 8.0/-2.2 7.8/-2.4 7.7/-2.5 7.6/-2.6 7.5/-2.8 7.3/-2.9 7.2/-3.0 7.0/-3.1 6.9/-3.3 6.8/-3.4 6.7/-3.5 6.5/-3.6 6.4/-3.7 6.3/-3.8 6.2/-3.9 6.2/-4.0 6.1/-4.1"
+};
+const DAILY_NORMALS={};
+for(const m in _DN_RAW){DAILY_NORMALS[m]={};_DN_RAW[m].trim().split(/\s+/).forEach((p,i)=>{const a=p.split("/");DAILY_NORMALS[m][i+1]={hi:a[0],lo:a[1]};});}
+
+// ================= タブ =================
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("p-"+t.dataset.p).classList.add("active");
+  };
+});
+
+// ================= 読み取り =================
+function pick(re,txt){const m=txt.match(re);return m?m[1].trim():"";}
+function parseMail(){
+  const t=document.getElementById("rawmail").value;
+  if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
+  // 氏名 → 姓のみ推定（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様の前まで）
+  let nameRaw=pick(/(?:氏名|お名前|名前)\]?\s*[:：]\s*([^\n(（]+)/,t);
+  let name=nameRaw.replace(/様\s*$/,"").replace(/\s+$/,"").trim();
+  if(name.includes(" ")||name.includes("　")) name=name.split(/[ 　]+/)[0];
+  else if(name.length>=3) name=name.slice(0,2); // 例:山田花子→山田(要確認)
+  // 宿泊日（★予約受付日時は宿泊日ではないので必ず除外してから探す）
+  let date="";
+  {
+   const cleaned=t.replace(/[（(]?\s*(?:予約)?受付日時[^\n]*/g,"");
+   // ①「宿泊日」ラベルの行の日付　→②「から◯泊」の直前の日付　→③（受付日時を除いた）最初の日付
+   let dl=(cleaned.match(/宿泊日[^\n]*/)||[])[0]||"";
+   if(!/\d{4}[\/年.\-]\d{1,2}/.test(dl)){
+     const m2=cleaned.match(/(\d{4}[\/年.\-]\d{1,2}[\/月.\-]\d{1,2})[^\n]{0,10}から\s*\d+\s*泊/);
+     dl=m2?m2[1]:(cleaned.match(/\d{4}[\/年.\-]\d{1,2}[\/月.\-]\d{1,2}/)||[])[0]||"";
+   }
+   const dm=dl.match(/(\d{4})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
+   if(dm) date=dm[1]+"/"+("0"+dm[2]).slice(-2)+"/"+("0"+dm[3]).slice(-2);
+  }
+  // 人数（全角コロン・「名」「人」どちらも対応。行の最後の「◯名」を人数として拾う）
+  const lastCount=line=>{const ms=[...line.matchAll(/[:：](\d+)\s*[名人]/g)];return ms.length?parseInt(ms[ms.length-1][1]):0;};
+  const adults=(t.match(/大人[\s　]*[:：][\s　]*(\d+)\s*[名人]/)||[])[1]||"";
+  let kids=0,infants=0;
+  (t.match(/(?:小学生|中学生|高校生|お子様|子供|こども)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))kids+=lastCount(l);});
+  (t.match(/(?:幼児|乳児|未就学児?)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))infants+=lastCount(l);});
+  let people=[];
+  if(adults)people.push("大人"+adults+"名");
+  if(kids)people.push("小学生"+kids+"名");
+  if(infants)people.push("幼児"+infants+"名");
+  const total=(parseInt(adults)||0)+kids+infants;
+  // 住所 → 都道府県（標高のたとえ用）と 出発地の市（本文用）
+  const addr=pick(/(?:ご住所|住所)\]?\s*[:：]\s*([^\n]+)/,t);
+  let pref="",from="";
+  const pm=addr.match(/(東京都|北海道|京都府|大阪府|.{1,3}県)/);
+  if(pm) pref=pm[1].replace(/[都府県]$/,""); // 東京都→東京／北海道→北海道／神奈川県→神奈川
+  const cm=addr.match(/[都道府県][\s　]*([^\s　0-9０-９]+?[市区町村])/);
+  const city=cm?cm[1]:"";
+  if(pref==="長野") from="地元";
+  else from = city ? city.replace(/[市区町村]$/,"") : pref;
+  // メール
+  let email=pick(/\[メール\]:([^\n]+)/,t);
+  if(!email.includes("@")) email="";
+  // ペット
+  let pet="";
+  const req=pick(/\[その他ご要望など\]:([^\n]*)/,t);
+  const room=pick(/\[お部屋\]:([^\n]+)/,t);
+  if(/犬|わんちゃん|ワンちゃん|ドッグ|チワ|トイプ|柴|ダックス/.test(req)) pet=req;
+  else if(/愛犬/.test(room)&&req) pet=req;
+  // 記念日プラン（飾り付け・シャンパンタワー等）
+  let celeb="";
+  if(/シャンパンタワー|飾り付け|アニバーサリー|記念日|サプライズ/.test(t)) celeb="あり";
+  // プラン
+  const plan=pick(/(?:\[?プラン\]?)[:：]\s*([^\n]+)/,t);
+  // 反映
+  setV("f-name",name); setV("f-date",date); setV("f-people",people.join("・"));
+  setV("f-total",total||""); setV("f-from",from); setV("f-pref",pref); setV("f-email",email);
+  setV("f-pet",pet); setV("f-celeb",celeb); setV("f-plan",plan);
+  // 警告
+  const w=[];
+  if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
+  if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
+  if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
+  if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
+  if(from==="地元") w.push("🏠 長野県内のお客様なので「遠路」の表現は外します。");
+  const name4=pick(/(?:氏名|お名前|名前)\]?\s*[:：]\s*([^\n(（]+)/,t);
+  if(!name) w.push("⚠️ お客様のお名前が読み取れませんでした。②の「宛名」を手で入れてください。");
+  else if(name4&&name4.replace(/様/,"").replace(/[ 　]/g,"").length>=3&&!name4.includes(" ")&&!name4.includes("　")) w.push("✏️ 姓の区切りを推定しました（「"+name+"」）。違ったら直してください。");
+  document.getElementById("warnings").innerHTML = w.length? '<div class="warnbox">'+w.join("<br>")+'</div>' : '<div class="okbox">✅ 読み取りOK。②を確認して「下書きを作る」へ。</div>';
+}
+function setV(id,v){document.getElementById(id).value=v;}
+function gV(id){return document.getElementById(id).value.trim();}
+
+// ================= 生成 =================
+const Z="０１２３４５６７８９";
+function zen(n){return String(n).split("").map(c=>/\d/.test(c)?Z[c]:c).join("");}
+function generate(){
+  // 「読み取る」を押し忘れても、メールが貼ってあれば自動で読み取る
+  if(!gV("f-date") && !gV("f-name") && document.getElementById("rawmail").value.trim()) parseMail();
+  const name=gV("f-name")||"※お客様名";
+  const dateRaw=gV("f-date");
+  let mm=0,dispDate="※宿泊日";
+  const dm=dateRaw.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if(dm){mm=parseInt(dm[2]);dispDate=zen(parseInt(dm[2]))+"月"+zen(parseInt(dm[3]))+"日";}
+  const total=gV("f-total")||"※";
+  const people=gV("f-people");
+  const from=gV("f-from");
+  const pref=gV("f-pref");
+  const pet=gV("f-pet");
+  const isLocal=(from==="地元"||pref==="長野");
+  // 標高の言い回し＝出発地の都道府県に合わせて変える（数字は半角）
+  let hClause;
+  if(pref==="山梨") hClause="標高約830メートルの場所"; // 比較なし
+  else if(pref==="神奈川" && /(横浜|川崎|横須賀)/.test(from)) hClause="標高約830メートルの場所（横浜ランドマークタワーの2.8倍）";
+  else if(HEIGHT_CLAUSE[pref]) hClause=HEIGHT_CLAUSE[pref];
+  else hClause="東京スカイツリーのてっぺんより200メートル高い標高約830メートルの場所"; // 関東一円＋その他
+  let heightSentence;
+  if(isLocal) heightSentence="当施設は標高約830メートルの高台にありますので、平野部よりさらに1〜2度低くなります。";
+  else heightSentence="当施設は"+hClause+"にあるので、これより1〜2度低くなります。";
+  const s=season[mm]||{txt:"",hi:"",lo:""};
+  const nrm=MATSU_NORMALS[mm];
+  const dd = dm?parseInt(dm[3]):0;
+  const key = (mm&&dd)?(("0"+mm).slice(-2)+("0"+dd).slice(-2)):"";
+  window.curKey=key; window.curMonth=mm; window.curDay=dd;
+  const ov = key?dateOverrides[key]:null;
+  const dtab = (DAILY_NORMALS[mm]&&dd)?DAILY_NORMALS[mm][dd]:null;
+  // 気温の優先順位：①その日の上書き ②気象庁の日別平年値(表) ③季節メモ ④気象庁の月平均 ⑤要確認
+  let hiT,loT,tempSrc;
+  if(ov){hiT=ov.hi;loT=ov.lo;tempSrc="ov";}
+  else if(dtab){hiT=dtab.hi;loT=dtab.lo;tempSrc="daily";}
+  else if(s.hi){hiT=s.hi;loT=s.lo;tempSrc="season";}
+  else if(nrm){hiT=nrm.hi;loT=nrm.lo;tempSrc="month";}
+  else {hiT="※要確認";loT="※要確認";tempSrc="none";}
+  const seasonWord = mm>=7&&mm<=8 ? "夏休み" : mm>=3&&mm<=5 ? "春" : mm>=9&&mm<=11 ? "秋" : mm===6 ? "初夏" : mm>=1&&mm<=2||mm===12 ? "冬" : "";
+
+  const L=[];
+  // 1 あいさつ
+  let g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのenCampスタッフ・柳と申します。この度は"+dispDate+"泊"+zen(total)+"名様"+(people?"（"+people+"）":"");
+  if(pet){
+    // 「チワックス 1頭 同伴予定です」→「チワックス」だけ取り出す
+    let petName=pet.replace(/同伴予定です|同伴です|を?連れて行きます|同伴/g,"").replace(/[0-9０-９]+\s*[頭匹]/g,"").replace(/[ 　]+/g," ").trim();
+    g+= petName ? "、愛犬の"+petName+"ちゃんとご一緒" : "、愛犬とご一緒";
+  }
+  g+="でご予約をいただきありがとうございます。爽やかな信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より歓迎致します（＾＾）";
+  L.push(g);
+  // 2 季節
+  L.push(s.txt ? "いまの松本地方・enCampの様子です。"+s.txt : "〔※"+ (mm||"？") +"月のenCampの様子＝季節メモが空です。柳さんに一言もらうか、季節メモタブに実例を足してください〕");
+  // 3 気候
+  let c="お越しいただく"+dispDate+"は平年だと松本で最高気温"+hiT+"度、最低気温"+loT+"度。"+heightSentence;
+  if(mm>=6&&mm<=9) c+="空気が澄んでいるため日差しは強いですが、湿度が低いので日陰に入れば涼しくなります。";
+  else if(mm>=11||mm<=3) c+="朝晩は冷え込みますので、暖かい服装でお越しいただくと安心です。";
+  if(!isLocal&&from) c+=from+"から来られますと夜は別天地のように感じられると思います。";
+  L.push(c);
+  // 4 夜（固定）
+  L.push("夜になるとキャンプ場内は暖かな色の電飾が森の中できらめき、ロマンチックな雰囲気となっています。BBQスペースでゆっくりとお食事をご堪能いただき、エアコンの効いたテントで楽しいひとときをお過ごしください。天気が良ければ隣接する旅館のお風呂近くの「星の踊り場」から綺麗な星空を見ることもできます。");
+  // 4.5 ペット
+  if(pet) L.push("今回は愛犬とご一緒とのこと。広い自然の中で、ワンちゃんものびのびと過ごせる時間になればうれしいです（＾＾）");
+  // 4.6 記念日プラン＝お祝い内容をおたずねする
+  if(gV("f-celeb")) L.push("また、この度は〈飾り付け・シャンパンタワー付〉の記念日プランをお選びいただき、ありがとうございます。当日はスタッフ一同、心を込めてお祝いのご準備をさせていただきます。より素敵な一日にできますよう、よろしければ〈どなたの・どのような記念日か（お誕生日／ご結婚記念日など）〉、そして〈お祝いされる方のご年齢・男性か女性か〉を、事前に教えていただけますでしょうか。飾り付けやちょっとしたサプライズのお手伝いもできますので、ご希望があればお気軽にお知らせください（＾＾）");
+  // 5 アクティビティ
+  let a="場内には約70メートルのジップラインや大型トランポリンなどもあります。";
+  a+= (mm>=7&&mm<=8) ? "夏休み期間中は子供たちの歓声がやみません（＾＾）ネイチャーゲームやミニ縁日もありますので大いに遊んでいってください。" : "お子様たちに大人気です（＾＾）ご家族みなさまで大いに遊んでいってください。";
+  L.push(a);
+  // 6 穂高（固定）
+  L.push("当施設のすぐ横にあるみどり湖堰堤（徒歩2〜3分）からは北アルプスの穂高連峰を望むことができますので、夕暮れ時や朝のお散歩がてら眺望をお楽しみください。この穂高連峰を平野部から見られるのは当施設のある塩尻市の一部だけです。");
+  // 7 コンシェルジュ（固定）
+  L.push("私たちは当地方のコンシェルジュでもありますので、何かあればいろいろ聞いてください。ちなみに私は前職で長年この地方の新聞記者をしておりました。");
+  // 8 結び
+  L.push("それでは、スタッフ一同お会いできるのを楽しみにしております（＾＾）"+(isLocal?"お気をつけてお越しください。":"遠路となりますので休憩を取りながら安全運転でお越しください。"));
+
+  const email=gV("f-email");
+  const head="────────────────────\n宛先：" + (email?email:"⚠️※要確認（お客様の実アドレスを確認！489ban宛はNG）") + "\n件名：【enCamp】ご予約ありがとうございます（"+dispDate+"ご宿泊）\n────────────────────\n\n";
+  document.getElementById("output").value = head + L.join("\n\n");
+  // 気温の出どころを表示＋気象庁リンク＋上書き欄
+  const tn=document.getElementById("tempnote");
+  const box=document.getElementById("tempbox");
+  if(!mm){tn.innerHTML="";box.style.display="none";}
+  else{
+    box.style.display="block";
+    const jl=document.getElementById("jmalink");
+    jl.href="https://www.data.jma.go.jp/stats/etrn/index.php?prec_no=48&block_no=47618&year=&month="+mm+"&day=&view=";
+    jl.textContent="📊 気象庁で"+mm+"月"+dd+"日の日別平年気温を確認する（松本）";
+    document.getElementById("ov-hi").value=(hiT==="※要確認"?"":hiT);
+    document.getElementById("ov-lo").value=(loT==="※要確認"?"":loT);
+    document.getElementById("ov-msg").textContent="";
+    if(tempSrc==="ov") tn.innerHTML="🌡 気温は<strong>気象庁で確認した"+mm+"月"+dd+"日の平年値（日別）</strong>を使いました（この日は記憶済み）。";
+    else if(tempSrc==="daily") tn.innerHTML="🌡 気温は気象庁の松本・<strong>"+mm+"月"+dd+"日の日別平年値（最高"+hiT+"／最低"+loT+"度）</strong>を自動で入れました。";
+    else if(tempSrc==="season") tn.innerHTML="🌡 気温は季節メモ（"+mm+"月）の数字を使いました。";
+    else if(tempSrc==="month") tn.innerHTML="🌡 いまは気象庁の<strong>"+mm+"月の平年値（月平均・最高"+hiT+"／最低"+loT+"度）</strong>を自動で入れています。柳さんのように<strong>日にち単位</strong>にしたいときは、下のリンクで"+mm+"月"+dd+"日の数字を見て上書きしてください（一度入れれば記憶します）。";
+    else tn.innerHTML="🌡 気温は「※要確認」です。宿泊日を正しく入れてください。";
+  }
+}
+
+// ================= コピー =================
+function copyOut(){
+  const o=document.getElementById("output");
+  // 宛先ヘッダーを除いて本文だけコピー
+  const body=o.value.replace(/^────[\s\S]*?────+\n\n/,"");
+  navigator.clipboard.writeText(body).then(()=>{
+    const b=document.getElementById("copybtn");
+    b.classList.add("copied"); b.textContent="✅ コピーしました";
+    setTimeout(()=>{b.classList.remove("copied");b.textContent="📋 コピー";},1600);
+  });
+}
+function claudePrompt(){
+  const p="以下は、グランピング施設enCampの予約歓迎メールの下書きです。柳さんという名物スタッフの温かい文体（自然描写・具体的・売り込まない・（＾＾）を使う）を保ったまま、より自然で心のこもった文章に磨いてください。事実（日付・人数・気温・季節の生き物）は勝手に追加・変更しないでください。※要確認の部分はそのまま残してください。\n\n---\n"+document.getElementById("output").value;
+  navigator.clipboard.writeText(p).then(()=>alert("Claudeへの相談文をコピーしました。Claudeのチャットに貼り付けてください。"));
+}
+function saveOverride(){
+  if(!window.curKey){alert("先に宿泊日を入れて「下書きを作る」を押してください");return;}
+  const hi=document.getElementById("ov-hi").value.trim(), lo=document.getElementById("ov-lo").value.trim();
+  if(!hi||!lo){alert("最高・最低の両方を入れてください（気象庁で確認した数字）");return;}
+  dateOverrides[window.curKey]={hi:hi,lo:lo};
+  localStorage.setItem("mk_dateov",JSON.stringify(dateOverrides));
+  generate(); // 反映
+  document.getElementById("ov-msg").textContent="✅ "+window.curMonth+"月"+window.curDay+"日を記憶しました。次からこの日は自動で入ります。";
+}
+function clearAll(){
+  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-email","f-pet","f-plan","output"].forEach(id=>setV(id,""));
+  document.getElementById("warnings").innerHTML="";
+}
+
+// ================= 季節メモ =================
+function renderSeason(){
+  const tb=document.getElementById("season-table");
+  let h="<tr><th style='width:70px'>月</th><th>自然・生き物・見どころ（柳さんの実例だけ）</th></tr>";
+  for(let m=1;m<=12;m++){
+    const s=season[m]||{txt:"",hi:"",lo:""};
+    h+=`<tr class="month-row"><td>${m}月</td><td>
+      <textarea id="se-t-${m}" placeholder="まだ実例なし（届いたら貼る）">${s.txt||""}</textarea>
+      <div class="temp-inputs">平年気温（気象庁で確認した数字だけ）：最高 <input type="text" id="se-h-${m}" value="${s.hi||""}"> 度 ／ 最低 <input type="text" id="se-l-${m}" value="${s.lo||""}"> 度</div>
+    </td></tr>`;
+  }
+  tb.innerHTML=h;
+}
+function saveSeason(){
+  for(let m=1;m<=12;m++){
+    season[m]={txt:document.getElementById("se-t-"+m).value.trim(),
+               hi:document.getElementById("se-h-"+m).value.trim(),
+               lo:document.getElementById("se-l-"+m).value.trim()};
+  }
+  localStorage.setItem("mk_season",JSON.stringify(season));
+  document.getElementById("season-msg").textContent="✅ 保存しました（このMacの中だけ）";
+  setTimeout(()=>document.getElementById("season-msg").textContent="",2500);
+}
+
+// ================= 改善ログ =================
+function renderLogs(){
+  document.getElementById("log-list").innerHTML = logs.map((l,i)=>
+    `<div class="log-item"><span>📌 ${l.d}　${l.t}</span><span class="del" onclick="delLog(${i})">削除</span></div>`
+  ).join("") || "<p class='note'>まだ記録がありません</p>";
+}
+function addLog(){
+  const t=document.getElementById("log-input").value.trim();
+  if(!t)return;
+  const d=new Date(); const ds=d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate();
+  logs.unshift({d:ds,t:t});
+  localStorage.setItem("mk_logs",JSON.stringify(logs));
+  document.getElementById("log-input").value=""; renderLogs();
+}
+function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringify(logs));renderLogs();}
+
+renderSeason(); renderLogs();
+</script>
+</body>
+</html>
