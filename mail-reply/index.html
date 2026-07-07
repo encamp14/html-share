@@ -67,6 +67,7 @@
   <div class="tab active" data-p="make">✉️ メールを作る</div>
   <div class="tab" data-p="season">🗓 季節メモを育てる</div>
   <div class="tab" data-p="spots">🗺 おすすめ案内</div>
+  <div class="tab" data-p="faq">💬 質問に返信</div>
   <div class="tab" data-p="pdca">📈 改善ログ（PDCA）</div>
   <div class="tab" data-p="help">❓ 使い方</div>
 </div>
@@ -105,6 +106,7 @@
           <label>ペット</label><input type="text" id="f-pet" placeholder="例：チワックス1頭（いなければ空欄）">
           <label>記念日プラン</label><input type="text" id="f-celeb" placeholder="飾り付け・シャンパンタワー等があれば「あり」">
           <label>送迎</label><input type="text" id="f-pickup" placeholder="あり／空欄（ありなら「安全運転で」を省く）">
+          <label>リピーター</label><input type="text" id="f-repeat" placeholder="あり／空欄（ありなら「はじめまして」を使わない）">
           <label>プラン</label><input type="text" id="f-plan" placeholder="プラン名">
         </div>
       </div>
@@ -191,6 +193,32 @@
     <li><strong>Act</strong>：たまったログをClaudeに見せて「型を改善して」と言う → メモを更新</li>
   </ol>
   <p class="note">🤖「Claudeに磨いてもらう文をコピー」ボタンを押すと、いまの下書きと読み取り情報が入った相談文がコピーされます。Claudeのチャットに貼れば、もっと自然な文に磨いてくれます。</p>
+</div>
+
+<!-- ============ 質問に返信（FAQ） ============ -->
+<div class="panel" id="p-faq">
+  <h2>💬 よくある質問に返信</h2>
+  <p class="note">「花火できる？」「ペットは？」などの定番質問に、ワンタッチで返信を作ります。質問をチェックすると、答えがまとまって出ます。</p>
+  <div class="warnbox">⚠️ <strong>※要確認</strong> と入っている答えは、正しい内容を美咲さん・柳さんが下の「追加・編集」で入れてください（花火・キャンセル料・雨天など、私が勝手に決められないもの）。そのまま送らないこと。</div>
+  <div class="card">
+    <div class="fields" style="grid-template-columns:110px 1fr">
+      <label>お客様のお名前</label><input type="text" id="faq-name" placeholder="例：山田花子">
+    </div>
+    <div id="faq-list" style="margin:10px 0"></div>
+    <div class="toolbar">
+      <button class="btn btn-main" onclick="makeFaq()">✨ 返信を作る</button>
+      <button class="btn btn-sub" id="faq-copybtn" onclick="copyFaq()">📋 コピー</button>
+    </div>
+    <textarea id="faq-output" style="min-height:260px" placeholder="質問をチェックして『返信を作る』を押すと、ここに出ます"></textarea>
+    <div id="faq-charcount" class="note" style="text-align:right"></div>
+  </div>
+  <h2>➕ 質問と答えを追加・保存</h2>
+  <p class="note">新しいQ&Aを登録できます。※要確認の答えも、ここで正しい内容に上書きして保存すればOK（同じ質問名で保存すると置き換わります）。</p>
+  <div class="card">
+    <input type="text" id="new-faq-q" placeholder="質問（例：花火はできますか？）" style="margin-bottom:6px">
+    <textarea id="new-faq-a" rows="3" placeholder="答え（enCampの正しいルールを書く）"></textarea>
+    <div class="toolbar" style="margin-bottom:0"><button class="btn btn-main btn-small" onclick="addFaq()">💾 保存</button><span id="new-faq-msg" class="note" style="align-self:center"></span></div>
+  </div>
 </div>
 
 <!-- ============ おすすめ案内 ============ -->
@@ -394,13 +422,25 @@ function parseMail(){
   // 反映
   setV("f-name",name); setV("f-date",date); setV("f-people",people.join("・"));
   setV("f-total",total||""); setV("f-from",from); setV("f-pref",pref); setV("f-email",email);
-  setV("f-pet",pet); setV("f-celeb",celeb); setV("f-pickup",hasPickup(t)?"あり":""); setV("f-plan",plan);
+  // リピーター判定（過去のご宿泊）
+  const pastLine=(t.match(/過去のご宿泊[^\n]*/)||[""])[0];
+  const isRepeat=/過去に宿泊|以前.*宿泊|\d回目|リピート/.test(pastLine);
+  setV("f-pet",pet); setV("f-celeb",celeb); setV("f-pickup",hasPickup(t)?"あり":""); setV("f-repeat",isRepeat?"あり":""); setV("f-plan",plan);
   // 警告
   const w=[];
   if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
   if(window.isIkyu) w.push("📮 一休の予約です。返信は<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
   if(hasPickup(t)) w.push("🚐 送迎ありの予約です。文末の「遠路となりますので…安全運転で」の一文は省きます。");
+  if(isRepeat) w.push("🔁 リピーターのお客様です（過去に宿泊）。挨拶を「いつもありがとうございます」にします。");
+  // お客様の要望・質問の拾い上げ
+  const reqTxt=(pick(/その他ご要望[^:：]*[:：]\s*([^\n]*)/,t) || pick(/(?:ご要望・?ご?質問|備考)[^:：]*[:：]\s*([^\n]*)/,t) || "").trim();
+  const reqClean=reqTxt.replace(/特にありません|特になし|特に無し|なし。?/g,"").trim();
+  if(reqTxt){
+    if(/[？?]/.test(reqTxt)) w.push("🙋 <strong>お客様が質問しています</strong>：「"+reqTxt+"」→ 下書きに回答を入れてください（分からなければ確認）。");
+    else if(/アレルギ|食べられない|苦手|ベジタリアン|卵|乳製品|そば|エビ|カニ|グルテン|離乳食/.test(reqTxt)) w.push("⚠️ <strong>食事・アレルギーの要望かも</strong>：「"+reqTxt+"」→ キッチンへ共有を。");
+    else if(reqClean.length>=3) w.push("📝 要望欄にメモがあります：「"+reqTxt+"」");
+  }
   if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
   if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
   if(from==="地元") w.push("🏠 長野県内のお客様なので「遠路」の表現は外します。");
@@ -451,14 +491,20 @@ function generate(){
   const seasonWord = mm>=7&&mm<=8 ? "夏休み" : mm>=3&&mm<=5 ? "春" : mm>=9&&mm<=11 ? "秋" : mm===6 ? "初夏" : mm>=1&&mm<=2||mm===12 ? "冬" : "";
 
   const L=[];
-  // 1 あいさつ
-  let g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのenCampスタッフ・柳と申します。この度は"+dispDate+"泊"+total+"名様"+(people?"（"+people+"）":"");
+  // 1 あいさつ（リピーターは「はじめまして」を使わない）
+  let petPart="";
   if(pet){
-    // 「チワックス 1頭 同伴予定です」→「チワックス」だけ取り出す
     let petName=pet.replace(/同伴予定です|同伴です|を?連れて行きます|同伴/g,"").replace(/[0-9０-９]+\s*[頭匹]/g,"").replace(/[ 　]+/g," ").trim();
-    g+= petName ? "、愛犬の"+petName+"ちゃんとご一緒" : "、愛犬とご一緒";
+    petPart = petName ? "、愛犬の"+petName+"ちゃんとご一緒" : "、愛犬とご一緒";
   }
-  g+="でご予約をいただきありがとうございます。爽やかな信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より歓迎致します（＾＾）";
+  const party=dispDate+"泊"+total+"名様"+(people?"（"+people+"）":"")+petPart;
+  const repeat=/あり|リピート|過去/.test(gV("f-repeat"));
+  let g;
+  if(repeat){
+    g=name+"様\n\nいつもenCampをご利用いただき、誠にありがとうございます。カウボーイハットがトレードマークのスタッフ・柳です。この度も"+party+"でのご予約、重ねてありがとうございます。またお会いできることを、スタッフ一同心より楽しみにしております（＾＾）";
+  } else {
+    g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのenCampスタッフ・柳と申します。この度は"+party+"でご予約をいただきありがとうございます。爽やかな信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より歓迎致します（＾＾）";
+  }
   L.push(g);
   // 2 季節：柳さんが毎朝入れる「今日の一文」が最優先。無ければ、送る日の上旬/中旬/下旬の季節メモ。
   const now=new Date(), sendM=now.getMonth()+1, sendD=now.getDate();
@@ -523,6 +569,48 @@ function generate(){
 }
 
 // ================= コピー =================
+// ===== よくある質問（事実が確認できるものだけ答えを入れ、不明は※要確認） =====
+const BUILTIN_FAQ=[
+ {q:"チェックイン・チェックアウトの時間は？",a:"チェックインは15:00～、チェックアウトは10:00となっております。"},
+ {q:"駅から送迎はありますか？",a:"塩尻駅から無料送迎をご用意しています（15時集合／17時集合）。ご希望の場合はご予約時にお選びいただくか、お知らせください。"},
+ {q:"ペット（犬）は一緒に泊まれますか？",a:"シェルテントは愛犬とご一緒にご宿泊いただけます（ドームテントはペット不可です）。ワンちゃん連れの場合はシェルテントをお選びください。"},
+ {q:"場内の遊びに予約は必要ですか？",a:"場内での遊びに予約は必要ありません。いっぱい遊んでいってください（＾＾）体験メニューにつきましては、ご用命いただければ対応いたします。"},
+ {q:"花火はできますか？",a:"※要確認（enCampのルールを記入してください）"},
+ {q:"キャンセル料はかかりますか？",a:"※要確認（正確なキャンセル規定を記入してください）"},
+ {q:"雨の場合はどうなりますか？",a:"※要確認（雨天時の対応を記入してください）"}
+];
+let customFaq = JSON.parse(localStorage.getItem("mk_faq")||"[]");
+function allFaq(){
+  // 同じ質問名はカスタムで上書き
+  const map={}; BUILTIN_FAQ.forEach(f=>map[f.q]=f); customFaq.forEach(f=>map[f.q]=f);
+  return Object.values(map);
+}
+function renderFaq(){
+  document.getElementById("faq-list").innerHTML=allFaq().map((f,i)=>{
+    const warn=/※要確認/.test(f.a)?" <span class='badge' style='background:var(--warn-bg);color:var(--warn)'>要確認</span>":"";
+    return `<label style="display:block;margin:7px 0;font-size:.9rem"><input type="checkbox" class="faq-chk" data-idx="${i}"> ${f.q}${warn}</label>`;
+  }).join("");
+}
+function makeFaq(){
+  const name=document.getElementById("faq-name").value.trim()||"◯◯";
+  const checked=[...document.querySelectorAll(".faq-chk:checked")].map(c=>allFaq()[parseInt(c.dataset.idx)]);
+  if(!checked.length){alert("質問を1つ以上チェックしてください");return;}
+  const body=name+"様\n\nお問い合わせいただきありがとうございます。enCampスタッフの柳です。\n\n"+checked.map(f=>"■ "+f.q+"\n"+f.a).join("\n\n")+"\n\nご不明な点がございましたら、お気軽にお問い合わせください。"+name+"様にお会いできるのを、スタッフ一同楽しみにしております（＾＾）\n\nenCamp　柳";
+  document.getElementById("faq-output").value=body;
+  updateFaqCount();
+}
+function updateFaqCount(){const n=document.getElementById("faq-output").value.length;const has=/※要確認/.test(document.getElementById("faq-output").value);document.getElementById("faq-charcount").innerHTML=(n?("文字数："+n+"文字"):"")+(has?" <span style='color:var(--warn)'>⚠️ ※要確認が残っています。埋めてから送ってください</span>":"");}
+function copyFaq(){navigator.clipboard.writeText(document.getElementById("faq-output").value).then(()=>{const b=document.getElementById("faq-copybtn");b.textContent="✅ コピーしました";setTimeout(()=>b.textContent="📋 コピー",1500);});}
+function addFaq(){
+  const q=document.getElementById("new-faq-q").value.trim();
+  const a=document.getElementById("new-faq-a").value.trim();
+  if(!q||!a){alert("質問と答えの両方を入れてください");return;}
+  customFaq=customFaq.filter(f=>f.q!==q); customFaq.push({q,a});
+  localStorage.setItem("mk_faq",JSON.stringify(customFaq));
+  ["new-faq-q","new-faq-a"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("new-faq-msg").textContent="✅ 保存しました";
+  renderFaq(); setTimeout(()=>document.getElementById("new-faq-msg").textContent="",2500);
+}
 // ===== おすすめスポット（柳さんの実メールの紹介文。数字は半角・波線は～） =====
 const BUILTIN_SPOTS=[
  {name:"高ボッチ高原",tags:["子連れ","カップル","自然","絶景","夜景"],text:"当施設周辺では、天気が良ければ車で30～40分で上れる高ボッチ（たかぼっち）高原はぜひ行ってほしい所です。高ボッチ山頂（標高1665メートル）から南東に諏訪湖と富士山を一望できます。アニメ映画「君の名は。」の糸守湖のモデルとなった風景です。高原台上の大駐車場から西に北アルプスの山々も望めます。諏訪湖の夜景も綺麗です。真っ暗な山道を車で上ると路上にシカなどの野生動物が出てきていて、ナイトサファリ気分を味わえます(笑)。"},
@@ -624,7 +712,7 @@ function saveOverride(){
   document.getElementById("ov-msg").textContent="✅ "+window.curMonth+"月"+window.curDay+"日を記憶しました。次からこの日は自動で入ります。";
 }
 function clearAll(){
-  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
+  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-pickup","f-repeat","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
   document.getElementById("warnings").innerHTML="";
   document.getElementById("sendinfo").style.display="none";
   document.getElementById("tempbox").style.display="none";
@@ -675,9 +763,10 @@ function addLog(){
 }
 function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringify(logs));renderLogs();}
 
-renderSeason(); renderLogs(); renderSpots();
+renderSeason(); renderLogs(); renderSpots(); renderFaq();
 document.getElementById("output").addEventListener("input",updateCharCount);
 document.getElementById("spot-output").addEventListener("input",updateSpotCount);
+document.getElementById("faq-output").addEventListener("input",updateFaqCount);
 if(todayNote&&todayNote.text) document.getElementById("today-text").value=todayNote.text;
 refreshTodayMsg();
 document.getElementById("today-text").addEventListener("input",refreshTodayMsg);
