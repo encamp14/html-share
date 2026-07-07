@@ -66,6 +66,7 @@
 <div class="tabs">
   <div class="tab active" data-p="make">✉️ メールを作る</div>
   <div class="tab" data-p="season">🗓 季節メモを育てる</div>
+  <div class="tab" data-p="spots">🗺 おすすめ案内</div>
   <div class="tab" data-p="pdca">📈 改善ログ（PDCA）</div>
   <div class="tab" data-p="help">❓ 使い方</div>
 </div>
@@ -190,6 +191,39 @@
     <li><strong>Act</strong>：たまったログをClaudeに見せて「型を改善して」と言う → メモを更新</li>
   </ol>
   <p class="note">🤖「Claudeに磨いてもらう文をコピー」ボタンを押すと、いまの下書きと読み取り情報が入った相談文がコピーされます。Claudeのチャットに貼れば、もっと自然な文に磨いてくれます。</p>
+</div>
+
+<!-- ============ おすすめ案内 ============ -->
+<div class="panel" id="p-spots">
+  <h2>🗺 おすすめスポット案内を作る</h2>
+  <p class="note">お客様から「おすすめの場所は？」と聞かれたときの返信を作ります。行き先をチェックすると、柳さんの紹介文がまとまって出ます（予約確定メールとは別物）。</p>
+  <div class="card">
+    <div class="fields" style="grid-template-columns:110px 1fr">
+      <label>お客様のお名前</label><input type="text" id="spot-name" placeholder="例：中村美緒">
+    </div>
+    <div style="margin-top:10px">
+      <span class="note">おすすめ相手で絞り込み：</span>
+      <button class="btn btn-sub btn-small" onclick="filterSpots('all',this)">すべて</button>
+      <button class="btn btn-sub btn-small" onclick="filterSpots('子連れ',this)">👨‍👩‍👧 子ども連れ向け</button>
+      <button class="btn btn-sub btn-small" onclick="filterSpots('カップル',this)">💑 カップル向け</button>
+    </div>
+    <div id="spot-list" style="margin:10px 0"></div>
+    <div class="toolbar">
+      <button class="btn btn-main" onclick="makeSpots()">✨ 案内文を作る</button>
+      <button class="btn btn-sub" id="spot-copybtn" onclick="copySpots()">📋 コピー</button>
+    </div>
+    <textarea id="spot-output" style="min-height:300px" placeholder="行き先をチェックして『案内文を作る』を押すと、ここに出ます"></textarea>
+    <div id="spot-charcount" class="note" style="text-align:right"></div>
+  </div>
+
+  <h2>➕ スポットを追加して保存</h2>
+  <p class="note">柳さんの他のおすすめ（松本城・信州スカイパークなど）を登録できます。次からチェックボックスに出ます。数字は半角で入れてください。</p>
+  <div class="card">
+    <input type="text" id="new-spot-name" placeholder="スポット名（例：松本城）" style="margin-bottom:6px">
+    <input type="text" id="new-spot-tags" placeholder="おすすめ相手・カテゴリ（例：カップル,歴史,子連れ）カンマ区切り" style="margin-bottom:6px">
+    <textarea id="new-spot-text" rows="3" placeholder="紹介文（柳さんの文章をそのまま貼る）"></textarea>
+    <div class="toolbar" style="margin-bottom:0"><button class="btn btn-main btn-small" onclick="addSpot()">💾 このスポットを保存</button><span id="new-spot-msg" class="note" style="align-self:center"></span></div>
+  </div>
 </div>
 
 <script>
@@ -483,6 +517,50 @@ function generate(){
 }
 
 // ================= コピー =================
+// ===== おすすめスポット（柳さんの実メールの紹介文。数字は半角・波線は～） =====
+const BUILTIN_SPOTS=[
+ {name:"高ボッチ高原",tags:["子連れ","カップル","自然","絶景","夜景"],text:"当施設周辺では、天気が良ければ車で30～40分で上れる高ボッチ（たかぼっち）高原はぜひ行ってほしい所です。高ボッチ山頂（標高1665メートル）から南東に諏訪湖と富士山を一望できます。アニメ映画「君の名は。」の糸守湖のモデルとなった風景です。高原台上の大駐車場から西に北アルプスの山々も望めます。諏訪湖の夜景も綺麗です。真っ暗な山道を車で上ると路上にシカなどの野生動物が出てきていて、ナイトサファリ気分を味わえます(笑)。"},
+ {name:"国営アルプスあづみの公園（堀金・穂高地区）",tags:["子連れ","自然","グルメ"],text:"子どもが楽しめることを最優先とすれば、安曇野市内の国営アルプスあづみの公園堀金・穂高地区（高速道路も使って当施設から約40分）がおススメです。さまざまな遊びや体験、川遊びもできます。すぐ近くに地元民御用達の「須砂渡食堂」というお店もあり、ここの「とりもつ」（煮物ではなく炒め物）が美味しいです。メニューが豊富でどれも美味しいですが、私は「とりもつとチャーハン」一択です(笑)"},
+ {name:"県営烏川渓谷緑地（川遊び・温泉）",tags:["子連れ","自然","温泉"],text:"須砂渡食堂のすぐそばの県営烏川渓谷緑地では、本格的な渓流での川遊びができます。真夏でも水が冷たいので大抵の人は足を入れるだけで悲鳴を上げますが、私はここで泳いで周りの人にドン引きされます(笑)。体が冷えたら、これまたすぐ近くの「ほりでーゆー四季の郷」で温泉の日帰り入浴もできます。"},
+ {name:"大王わさび農場",tags:["子連れ","カップル","自然","グルメ"],text:"安曇野市内だと大王わさび農場も人気です。澄んだ万水川（よろずいがわ）に水車がかかる風景（黒澤明監督の映画「夢」のロケ地）が今もあり、クリアボート（底の透明なゴムボート）によるラフティングもできます。ワサビソフトやワサビコロッケも美味しいです。"},
+ {name:"本山宿「本山そばの里」",tags:["子連れ","カップル","グルメ","歴史"],text:"「信州といえば蕎麦」ですが、当施設から車で20分ほどの中山道の本山宿は「そば切り発祥の地」（宝永3年・1706年発刊の「風俗文選」で松尾芭蕉の門下の森川許六が紹介）と言われ、地元のおばちゃんたちがその歴史を伝えようと立ち上げた「本山そばの里」のお蕎麦が美味しいです。お蕎麦に付くちょっとした小鉢も私は好きです。"},
+ {name:"奈良井宿",tags:["カップル","歴史","観光"],text:"本山宿の先の奈良井宿（車で約35分）は、中山道の宿場町の姿を約1キロにわたって今に伝える国指定重要伝統的建造物群保存地区で、人気の観光地です。軒先の看板が京都側は漢字で、江戸側は平仮名で書かれています。毎年6月第一土日には木曽漆器祭・奈良井宿場祭が開かれ、江戸時代の「お茶壺道中」が再現されます。"}
+];
+let customSpots = JSON.parse(localStorage.getItem("mk_spots")||"[]");
+let spotFilter='all';
+function allSpots(){return BUILTIN_SPOTS.concat(customSpots);}
+function renderSpots(){
+  const spots=allSpots();
+  document.getElementById("spot-list").innerHTML = spots.map((s,i)=>{
+    const show = spotFilter==='all'||(s.tags||[]).includes(spotFilter);
+    return show ? `<label style="display:block;margin:7px 0;font-size:.9rem;line-height:1.4"><input type="checkbox" class="spot-chk" data-idx="${i}"> <strong>${s.name}</strong> <span class="badge">${(s.tags||[]).join(' / ')}</span></label>` : "";
+  }).join("") || "<p class='note'>該当するスポットがありません</p>";
+}
+function filterSpots(f,btn){spotFilter=f;renderSpots();
+  document.querySelectorAll('#p-spots .btn-sub.btn-small').forEach(b=>b.classList.remove('copied'));
+  if(btn)btn.classList.add('copied');}
+function makeSpots(){
+  const name=document.getElementById("spot-name").value.trim()||"◯◯";
+  const checked=[...document.querySelectorAll(".spot-chk:checked")].map(c=>allSpots()[parseInt(c.dataset.idx)]);
+  if(!checked.length){alert("行き先を1つ以上チェックしてください");return;}
+  const body=name+"様\n\nメールをいただきありがとうございます。当施設周辺のおすすめスポットをご紹介します（＾＾）\n\n"+checked.map(s=>s.text).join("\n\n")+"\n\nご参考まで。この機会に当地方を満喫していってください（＾＾）\n\nenCamp　柳";
+  document.getElementById("spot-output").value=body;
+  updateSpotCount();
+}
+function updateSpotCount(){const n=document.getElementById("spot-output").value.length;document.getElementById("spot-charcount").innerText=n?("文字数："+n+"文字（一休は5000文字まで）"):"";}
+function copySpots(){navigator.clipboard.writeText(document.getElementById("spot-output").value).then(()=>{const b=document.getElementById("spot-copybtn");b.textContent="✅ コピーしました";setTimeout(()=>b.textContent="📋 コピー",1500);});}
+function addSpot(){
+  const name=document.getElementById("new-spot-name").value.trim();
+  const tags=document.getElementById("new-spot-tags").value.split(/[,、\s　]+/).filter(Boolean);
+  const text=document.getElementById("new-spot-text").value.trim();
+  if(!name||!text){alert("スポット名と紹介文は必須です");return;}
+  customSpots.push({name,tags,text});
+  localStorage.setItem("mk_spots",JSON.stringify(customSpots));
+  ["new-spot-name","new-spot-tags","new-spot-text"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("new-spot-msg").textContent="✅ 保存しました（次からチェックボックスに出ます）";
+  renderSpots();
+  setTimeout(()=>document.getElementById("new-spot-msg").textContent="",2500);
+}
 function todayStr(){const d=new Date();return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate();}
 function refreshTodayMsg(){
   const el=document.getElementById("today-msg");
@@ -587,8 +665,9 @@ function addLog(){
 }
 function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringify(logs));renderLogs();}
 
-renderSeason(); renderLogs();
+renderSeason(); renderLogs(); renderSpots();
 document.getElementById("output").addEventListener("input",updateCharCount);
+document.getElementById("spot-output").addEventListener("input",updateSpotCount);
 if(todayNote&&todayNote.text) document.getElementById("today-text").value=todayNote.text;
 refreshTodayMsg();
 document.getElementById("today-text").addEventListener("input",refreshTodayMsg);
