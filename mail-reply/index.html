@@ -141,8 +141,8 @@
 <!-- ============ 季節メモ ============ -->
 <div class="panel" id="p-season">
   <h2>🗓 季節メモ（柳さんの実例だけを書く・想像で書かない）</h2>
-  <p class="note">柳さんの過去メールから「その月の自然・生き物・見どころ」を貼って保存。埋まっている月は自動で本文に入り、空欄の月は「※要確認」になります。</p>
-  <div class="okbox">🌡 <strong>気温は自動です。</strong>下の欄を空けておけば、気象庁の松本・月別平年値（1991～2020年）が自動で入ります。柳さんが日別で調べた数字を入れたいときだけ、下の欄に上書きしてください（空欄＝気象庁の月平均を使用）。</div>
+  <p class="note">柳さんの過去メールから「その月の自然・生き物・見どころ」を、<strong>上旬（1～10日）・中旬（11～20日）・下旬（21日～）</strong>に分けて貯めます。メールを送る日に合わせて自動で選ばれます（「今日の一文」を入れた日は、そちらが最優先）。</p>
+  <div class="okbox">🌱 いまは各月の代表文が<strong>中旬</strong>に入っています。上旬・下旬を少しずつ足して育ててください。空いている時期は、埋まっている時期の文でフォローします。🌡 気温は宿泊日ごとに気象庁の日別平年値が自動で入るので、ここでは気温は扱いません。</div>
   <table id="season-table"></table>
   <div class="toolbar">
     <button class="btn btn-main" onclick="saveSeason()">💾 季節メモを保存</button>
@@ -229,19 +229,25 @@
 <script>
 // ================= 保存データ =================
 // 柳さんの実際のメール（2025/11～2026/6）から抽出した、月ごとの「今のenCampの様子」。8～10月は実例待ち。
-const DEFAULT_SEASON = {
-  1:{txt:"一年で最も寒さの厳しい時期です。氷点下の朝を迎え、空気は凛と澄みわたり、冠雪した北アルプスの峰々がくっきりと映えます。",hi:"",lo:""},
-  2:{txt:"三寒四温で寒暖差の大きい時期ですが、寒さの峠は少しずつ越えていきます。近くの林に、国の天然記念物・ニホンカモシカがひょっこり姿を見せることもあります。",hi:"",lo:""},
-  3:{txt:"春の訪れを感じる頃です。松本城のお堀ではソメイヨシノの便りが届き、足元にはオオイヌノフグリ、街中では梅やハナミズキが咲き始めます。",hi:"",lo:""},
-  4:{txt:"木々が芽吹き、日に日に新緑が濃くなります。テント周りでは山菜のコシアブラが採れ、周辺ではスイセンや芝桜、桃が咲いて花いっぱいに。棚田では田植えの準備が始まります。",hi:"",lo:""},
-  5:{txt:"深緑となったコナラの葉の先に、澄んだ青空が広がります。木々の間に飾り付けたカラフルな傘がさわやかな風に揺れ、春ゼミの声も聞こえ始めました。田植えを終えた棚田の先には残雪の穂高連峰が見え、初夏を実感します。",hi:"",lo:""},
-  6:{txt:"深緑の木々の間に飾り付けたカラフルな傘に、木漏れ日が差します。田園地帯では金色に色づいた麦の収穫が始まり、夜にはすぐ横のみどり湖でホタルが舞い、樹液を吸うカブトムシも見られるようになります。",hi:"",lo:""},
-  7:{txt:"深緑の木々の間に飾り付けたカラフルな傘。田園地帯では金色に色づいた麦の収穫が始まり、北アルプスの高い山も夏山の装いとなりました。夜にはすぐ横のみどり湖の水路でホタルが舞い、樹液を吸うカブトムシも見られます。夕方はヒグラシの鳴き声に包まれます。",hi:"",lo:""},
-  8:{txt:"",hi:"",lo:""},9:{txt:"",hi:"",lo:""},10:{txt:"",hi:"",lo:""},
-  11:{txt:"紅葉も終盤を迎え、北アルプスの山頂付近は雪化粧を始めました。日中は季節外れに暖かい日もありますが、朝晩はぐっと冷え込みます。澄んだ空気の中、冠雪した峰々が美しく映えます。",hi:"",lo:""},
-  12:{txt:"北アルプスの山々はすっかり雪化粧をまといました。本格的な冬を迎え、凛と澄んだ空気の中に、冠雪した峰がくっきりと浮かびます。",hi:"",lo:""}
+// 柳さんの月ごとの代表的な描写（まず中旬に入れておく。上旬・下旬を足して育てる）
+const SEASON_SEED = {
+  1:"一年で最も寒さの厳しい時期です。氷点下の朝を迎え、空気は凛と澄みわたり、冠雪した北アルプスの峰々がくっきりと映えます。",
+  2:"三寒四温で寒暖差の大きい時期ですが、寒さの峠は少しずつ越えていきます。近くの林に、国の天然記念物・ニホンカモシカがひょっこり姿を見せることもあります。",
+  3:"春の訪れを感じる頃です。松本城のお堀ではソメイヨシノの便りが届き、足元にはオオイヌノフグリ、街中では梅やハナミズキが咲き始めます。",
+  4:"木々が芽吹き、日に日に新緑が濃くなります。テント周りでは山菜のコシアブラが採れ、周辺ではスイセンや芝桜、桃が咲いて花いっぱいに。棚田では田植えの準備が始まります。",
+  5:"深緑となったコナラの葉の先に、澄んだ青空が広がります。木々の間に飾り付けたカラフルな傘がさわやかな風に揺れ、春ゼミの声も聞こえ始めました。田植えを終えた棚田の先には残雪の穂高連峰が見え、初夏を実感します。",
+  6:"深緑の木々の間に飾り付けたカラフルな傘に、木漏れ日が差します。田園地帯では金色に色づいた麦の収穫が始まり、夜にはすぐ横のみどり湖でホタルが舞い、樹液を吸うカブトムシも見られるようになります。",
+  7:"深緑の木々の間に飾り付けたカラフルな傘。田園地帯では金色に色づいた麦の収穫が始まり、北アルプスの高い山も夏山の装いとなりました。夜にはすぐ横のみどり湖の水路でホタルが舞い、樹液を吸うカブトムシも見られます。夕方はヒグラシの鳴き声に包まれます。",
+  8:"",9:"",10:"",
+  11:"紅葉も終盤を迎え、北アルプスの山頂付近は雪化粧を始めました。日中は季節外れに暖かい日もありますが、朝晩はぐっと冷え込みます。澄んだ空気の中、冠雪した峰々が美しく映えます。",
+  12:"北アルプスの山々はすっかり雪化粧をまといました。本格的な冬を迎え、凛と澄んだ空気の中に、冠雪した峰がくっきりと浮かびます。"
 };
+// {月:{kami:上旬, naka:中旬, shimo:下旬}}。種は中旬に入れる。
+const DEFAULT_SEASON = {};
+for(let m=1;m<=12;m++){DEFAULT_SEASON[m]={kami:"",naka:SEASON_SEED[m]||"",shimo:""};}
 let season = JSON.parse(localStorage.getItem("mk_season")||"null") || DEFAULT_SEASON;
+// 旧形式(txt)を新形式(kami/naka/shimo)へ移行
+for(const m in season){ if(season[m] && season[m].txt!==undefined){ season[m]={kami:"",naka:season[m].txt||"",shimo:""}; } }
 let logs = JSON.parse(localStorage.getItem("mk_logs")||"[]");
 // 日付ごとの平年気温の上書き（気象庁で確認した本物の数字だけ。キー=MMDD）
 let dateOverrides = JSON.parse(localStorage.getItem("mk_dateov")||"{}");
@@ -430,18 +436,16 @@ function generate(){
   let heightSentence;
   if(isLocal) heightSentence="当施設は標高約830メートルの高台にありますので、平野部よりさらに1～2度低くなります。";
   else heightSentence="当施設は"+hClause+"にあるので、これより1～2度低くなります。";
-  const s=season[mm]||{txt:"",hi:"",lo:""};
   const nrm=MATSU_NORMALS[mm];
   const dd = dm?parseInt(dm[3]):0;
   const key = (mm&&dd)?(("0"+mm).slice(-2)+("0"+dd).slice(-2)):"";
   window.curKey=key; window.curMonth=mm; window.curDay=dd;
   const ov = key?dateOverrides[key]:null;
   const dtab = (DAILY_NORMALS[mm]&&dd)?DAILY_NORMALS[mm][dd]:null;
-  // 気温の優先順位：①その日の上書き ②気象庁の日別平年値(表) ③季節メモ ④気象庁の月平均 ⑤要確認
+  // 気温の優先順位：①その日の上書き ②気象庁の日別平年値(表) ③気象庁の月平均 ④要確認
   let hiT,loT,tempSrc;
   if(ov){hiT=ov.hi;loT=ov.lo;tempSrc="ov";}
   else if(dtab){hiT=dtab.hi;loT=dtab.lo;tempSrc="daily";}
-  else if(s.hi){hiT=s.hi;loT=s.lo;tempSrc="season";}
   else if(nrm){hiT=nrm.hi;loT=nrm.lo;tempSrc="month";}
   else {hiT="※要確認";loT="※要確認";tempSrc="none";}
   const seasonWord = mm>=7&&mm<=8 ? "夏休み" : mm>=3&&mm<=5 ? "春" : mm>=9&&mm<=11 ? "秋" : mm===6 ? "初夏" : mm>=1&&mm<=2||mm===12 ? "冬" : "";
@@ -456,10 +460,12 @@ function generate(){
   }
   g+="でご予約をいただきありがとうございます。爽やかな信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より歓迎致します（＾＾）";
   L.push(g);
-  // 2 季節：柳さんが毎朝入れる「今日の一文」が最優先。無ければ月ごとの季節メモ。
-  const sendM=(new Date()).getMonth()+1;
+  // 2 季節：柳さんが毎朝入れる「今日の一文」が最優先。無ければ、送る日の上旬/中旬/下旬の季節メモ。
+  const now=new Date(), sendM=now.getMonth()+1, sendD=now.getDate();
+  const period = sendD<=10?'kami':sendD<=20?'naka':'shimo';
+  const ms=season[sendM]||{};
+  const sNat = ms[period]||ms.naka||ms.kami||ms.shimo||"";
   const todayField=document.getElementById("today-text").value.trim();
-  const sNat=(season[sendM]||{txt:""}).txt;
   L.push(todayField ? todayField : (sNat ? sNat : "〔※今日の一文が空です。上の「今日の一文」に今日のenCampの様子を入れてください〕"));
   // 3 気候
   let c="お越しいただく"+dispDate+"は平年だと松本で最高気温"+hiT+"度、最低気温"+loT+"度。"+heightSentence;
@@ -626,23 +632,27 @@ function clearAll(){
 }
 
 // ================= 季節メモ =================
+const PERIODS=[["kami","上旬（1～10日）"],["naka","中旬（11～20日）"],["shimo","下旬（21日～）"]];
+function esc(s){return (s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function renderSeason(){
   const tb=document.getElementById("season-table");
-  let h="<tr><th style='width:70px'>月</th><th>自然・生き物・見どころ（柳さんの実例だけ）</th></tr>";
+  let h="<tr><th style='width:56px'>月</th><th>自然・生き物・見どころ（上旬・中旬・下旬／柳さんの実例だけ）</th></tr>";
   for(let m=1;m<=12;m++){
-    const s=season[m]||{txt:"",hi:"",lo:""};
-    h+=`<tr class="month-row"><td>${m}月</td><td>
-      <textarea id="se-t-${m}" placeholder="まだ実例なし（届いたら貼る）">${s.txt||""}</textarea>
-      <div class="temp-inputs">平年気温（気象庁で確認した数字だけ）：最高 <input type="text" id="se-h-${m}" value="${s.hi||""}"> 度 ／ 最低 <input type="text" id="se-l-${m}" value="${s.lo||""}"> 度</div>
-    </td></tr>`;
+    const s=season[m]||{kami:"",naka:"",shimo:""};
+    let cells="";
+    PERIODS.forEach(([k,lbl])=>{
+      cells+=`<div style="font-size:.78rem;color:var(--green);margin-top:5px">${lbl}</div>
+      <textarea id="se-${m}-${k}" placeholder="この時期の様子（実例だけ）">${esc(s[k])}</textarea>`;
+    });
+    h+=`<tr class="month-row"><td>${m}月</td><td>${cells}</td></tr>`;
   }
   tb.innerHTML=h;
 }
 function saveSeason(){
   for(let m=1;m<=12;m++){
-    season[m]={txt:document.getElementById("se-t-"+m).value.trim(),
-               hi:document.getElementById("se-h-"+m).value.trim(),
-               lo:document.getElementById("se-l-"+m).value.trim()};
+    season[m]={kami:document.getElementById("se-"+m+"-kami").value.trim(),
+               naka:document.getElementById("se-"+m+"-naka").value.trim(),
+               shimo:document.getElementById("se-"+m+"-shimo").value.trim()};
   }
   localStorage.setItem("mk_season",JSON.stringify(season));
   document.getElementById("season-msg").textContent="✅ 保存しました（このMacの中だけ）";
