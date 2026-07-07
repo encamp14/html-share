@@ -72,6 +72,16 @@
 
 <!-- ============ 作る ============ -->
 <div class="panel active" id="p-make">
+  <div class="card" style="border:2px solid var(--rose);background:var(--rose-bg);margin-bottom:14px">
+    <label style="font-weight:600;color:var(--rose-dark);font-size:1rem">📝 今日の一文（毎朝ここだけ更新）</label>
+    <div class="note" style="margin:4px 0 8px">柳さんが毎朝「今日のenCampの様子」をここに入れておくと、<strong>今日つくるメール全部の2段落目に自動で入ります</strong>。空欄のときは月ごとの季節メモを使います。</div>
+    <textarea id="today-text" rows="4" placeholder="例：七夕の今日の松本地方は梅雨の晴れ間となり、enCampでは深緑の先に青空と白い雲が映え…（今日の様子を貼り付け）"></textarea>
+    <div class="toolbar" style="margin-bottom:0">
+      <button class="btn btn-main btn-small" onclick="saveToday()">💾 今日の一文を保存</button>
+      <button class="btn btn-sub btn-small" onclick="clearToday()">クリア</button>
+      <span id="today-msg" class="note" style="align-self:center"></span>
+    </div>
+  </div>
   <div class="grid2">
     <div>
       <h2>① 予約通知を貼り付け</h2>
@@ -200,6 +210,8 @@ let season = JSON.parse(localStorage.getItem("mk_season")||"null") || DEFAULT_SE
 let logs = JSON.parse(localStorage.getItem("mk_logs")||"[]");
 // 日付ごとの平年気温の上書き（気象庁で確認した本物の数字だけ。キー=MMDD）
 let dateOverrides = JSON.parse(localStorage.getItem("mk_dateov")||"{}");
+// 今日の一文（柳さんが毎朝更新。2段落目に必ず入る）
+let todayNote = JSON.parse(localStorage.getItem("mk_today")||"null"); // {date, text}
 
 // 松本の月別平年気温（気象庁 松本観測所 1991-2020年平年値・出典 data.jma.go.jp block_no=47618）
 // ※これは「月の平均」。柳さんが日別で調べた数字があれば季節メモで上書きできます。
@@ -393,10 +405,11 @@ function generate(){
   }
   g+="でご予約をいただきありがとうございます。爽やかな信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より歓迎致します（＾＾）";
   L.push(g);
-  // 2 季節：柳さんは「メールを送る"今日"の様子」を書くので、宿泊月ではなく今月で選ぶ
+  // 2 季節：柳さんが毎朝入れる「今日の一文」が最優先。無ければ月ごとの季節メモ。
   const sendM=(new Date()).getMonth()+1;
+  const todayField=document.getElementById("today-text").value.trim();
   const sNat=(season[sendM]||{txt:""}).txt;
-  L.push(sNat ? sNat : "〔※"+sendM+"月の季節メモが空です（8～10月は実例待ち）。季節メモタブに柳さんの実例を足すか、今日のenCampの様子を一言書いてください〕");
+  L.push(todayField ? todayField : (sNat ? sNat : "〔※今日の一文が空です。上の「今日の一文」に今日のenCampの様子を入れてください〕"));
   // 3 気候
   let c="お越しいただく"+dispDate+"は平年だと松本で最高気温"+hiT+"度、最低気温"+loT+"度。"+heightSentence;
   if(mm>=6&&mm<=9) c+="空気が澄んでいるため日差しは強いですが、湿度が低いので日陰に入れば涼しくなります。";
@@ -448,6 +461,26 @@ function generate(){
 }
 
 // ================= コピー =================
+function todayStr(){const d=new Date();return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate();}
+function refreshTodayMsg(){
+  const el=document.getElementById("today-msg");
+  const has=document.getElementById("today-text").value.trim();
+  if(!has){el.innerHTML=todayNote&&todayNote.text?"（保存された一文をクリアしました）":"";return;}
+  if(todayNote && todayNote.text===has && todayNote.date===todayStr()) el.innerHTML="✅ 今日（"+todayNote.date+"）の一文が入っています";
+  else if(todayNote && todayNote.text===has) el.innerHTML="⚠️ これは<strong>"+todayNote.date+"</strong>に保存した一文です。今日の分に更新してください";
+  else el.innerHTML="（未保存。保存すると次回開いても残ります）";
+}
+function saveToday(){
+  const text=document.getElementById("today-text").value.trim();
+  todayNote={date:todayStr(),text:text};
+  localStorage.setItem("mk_today",JSON.stringify(todayNote));
+  refreshTodayMsg();
+}
+function clearToday(){
+  document.getElementById("today-text").value="";
+  todayNote=null; localStorage.removeItem("mk_today");
+  document.getElementById("today-msg").innerHTML="";
+}
 function updateCharCount(){
   const n=document.getElementById("output").value.length;
   const el=document.getElementById("charcount");
@@ -534,6 +567,9 @@ function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringif
 
 renderSeason(); renderLogs();
 document.getElementById("output").addEventListener("input",updateCharCount);
+if(todayNote&&todayNote.text) document.getElementById("today-text").value=todayNote.text;
+refreshTodayMsg();
+document.getElementById("today-text").addEventListener("input",refreshTodayMsg);
 </script>
 </body>
 </html>
