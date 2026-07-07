@@ -263,14 +263,14 @@ function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
   // 氏名 → フルネーム（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様は除く）
-  let nameRaw=pick(/(?:氏名|お名前|名前)\]?\s*[:：]\s*([^\n(（]+)/,t);
+  let nameRaw=pick(/(?:氏名|お名前|名前|宿泊代表者)\]?[\s　]*[:：][\s　]*([^\n(（]+)/,t);
   let name=nameRaw.replace(/様\s*$/,"").replace(/[\s　]+/g,"").trim();
   // 宿泊日（★予約受付日時は宿泊日ではないので必ず除外してから探す）
   let date="";
   {
    const cleaned=t.replace(/[（(]?\s*(?:予約)?受付日時[^\n]*/g,"");
    // ①「宿泊日」ラベルの行の日付　→②「から◯泊」の直前の日付　→③（受付日時を除いた）最初の日付
-   let dl=(cleaned.match(/宿泊日[^\n]*/)||[])[0]||"";
+   let dl=(cleaned.match(/(?:宿泊日|到着日|チェックイン|C\/IN)[^\n]*/)||[])[0]||"";
    if(!/\d{4}[\/年.\-]\d{1,2}/.test(dl)){
      const m2=cleaned.match(/(\d{4}[\/年.\-]\d{1,2}[\/月.\-]\d{1,2})[^\n]{0,10}から\s*\d+\s*泊/);
      dl=m2?m2[1]:(cleaned.match(/\d{4}[\/年.\-]\d{1,2}[\/月.\-]\d{1,2}/)||[])[0]||"";
@@ -280,17 +280,26 @@ function parseMail(){
   }
   // 人数（全角コロン・「名」「人」どちらも対応。行の最後の「◯名」を人数として拾う）
   const lastCount=line=>{const ms=[...line.matchAll(/[:：](\d+)\s*[名人]/g)];return ms.length?parseInt(ms[ms.length-1][1]):0;};
-  const adults=(t.match(/大人[\s　]*[:：][\s　]*(\d+)\s*[名人]/)||[])[1]||"";
-  let kids=0,infants=0;
-  (t.match(/(?:小学生|中学生|高校生|お子様|子供|こども)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))kids+=lastCount(l);});
-  (t.match(/(?:幼児|乳児|未就学児?)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))infants+=lastCount(l);});
+  let adults=0,kids=0,infants=0;
+  // 一休など「宿泊延べ人数：大人2名 + 子供1名」のまとめ行があれば優先（重複カウント防止）
+  const sumLine=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[])[0]||"";
+  if(/大人[\s　]*\d/.test(sumLine)){
+    adults=parseInt((sumLine.match(/大人[\s　]*(\d+)/)||[])[1]||0);
+    [...sumLine.matchAll(/(?:小学生|小学校[低中高]学年|中学生|高校生|子供|こども|児童)[\s　]*(\d+)/g)].forEach(m=>kids+=parseInt(m[1]));
+    [...sumLine.matchAll(/(?:幼児|乳児|未就学児?)[\s　]*(\d+)/g)].forEach(m=>infants+=parseInt(m[1]));
+  } else {
+    adults=parseInt((t.match(/大人[\s　]*[:：][\s　]*(\d+)\s*[名人]/)||[])[1]||0);
+    (t.match(/(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))kids+=lastCount(l);});
+    (t.match(/(?:幼児|乳児|未就学児?)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))infants+=lastCount(l);});
+  }
   let people=[];
   if(adults)people.push("大人"+adults+"名");
   if(kids)people.push("小学生"+kids+"名");
   if(infants)people.push("幼児"+infants+"名");
   const total=(parseInt(adults)||0)+kids+infants;
   // 住所 → 都道府県（標高のたとえ用）と 出発地の市（本文用）
-  const addr=pick(/(?:ご住所|住所)\]?\s*[:：]\s*([^\n]+)/,t);
+  let addr=pick(/(?:ご住所|住所)\]?[\s　]*[:：][\s　]*([^\n]+)/,t);
+  if(!addr){addr=pick(/都道府県[\s　]*[:：][\s　]*([^\n]+)/,t);} // 一休：宿泊代表者都道府県：愛知県
   let pref="",from="";
   const pm=addr.match(/(東京都|北海道|京都府|大阪府|.{1,3}県)/);
   if(pm) pref=pm[1].replace(/[都府県]$/,""); // 東京都→東京／北海道→北海道／神奈川県→神奈川
