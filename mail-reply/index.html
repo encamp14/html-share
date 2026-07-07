@@ -148,6 +148,7 @@
   <table id="season-table"></table>
   <div class="toolbar">
     <button class="btn btn-main" onclick="saveSeason()">💾 季節メモを保存</button>
+    <button class="btn btn-sub btn-small" onclick="clearSeasonInputs()">全部クリア</button>
     <span id="season-msg" class="note"></span>
   </div>
 </div>
@@ -208,6 +209,7 @@
     <div class="toolbar">
       <button class="btn btn-main" onclick="makeFaq()">✨ 返信を作る</button>
       <button class="btn btn-sub" id="faq-copybtn" onclick="copyFaq()">📋 コピー</button>
+      <button class="btn btn-sub btn-small" onclick="clearFaq()">クリア</button>
     </div>
     <textarea id="faq-output" style="min-height:260px" placeholder="質問をチェックして『返信を作る』を押すと、ここに出ます"></textarea>
     <div id="faq-charcount" class="note" style="text-align:right"></div>
@@ -239,6 +241,7 @@
     <div class="toolbar">
       <button class="btn btn-main" onclick="makeSpots()">✨ 案内文を作る</button>
       <button class="btn btn-sub" id="spot-copybtn" onclick="copySpots()">📋 コピー</button>
+      <button class="btn btn-sub btn-small" onclick="clearSpots()">クリア</button>
     </div>
     <textarea id="spot-output" style="min-height:300px" placeholder="行き先をチェックして『案内文を作る』を押すと、ここに出ます"></textarea>
     <div id="spot-charcount" class="note" style="text-align:right"></div>
@@ -601,6 +604,12 @@ function makeFaq(){
 }
 function updateFaqCount(){const n=document.getElementById("faq-output").value.length;const has=/※要確認/.test(document.getElementById("faq-output").value);document.getElementById("faq-charcount").innerHTML=(n?("文字数："+n+"文字"):"")+(has?" <span style='color:var(--warn)'>⚠️ ※要確認が残っています。埋めてから送ってください</span>":"");}
 function copyFaq(){navigator.clipboard.writeText(document.getElementById("faq-output").value).then(()=>{const b=document.getElementById("faq-copybtn");b.textContent="✅ コピーしました";setTimeout(()=>b.textContent="📋 コピー",1500);});}
+function clearFaq(){
+  document.querySelectorAll(".faq-chk").forEach(c=>c.checked=false);
+  document.getElementById("faq-name").value="";
+  document.getElementById("faq-output").value="";
+  document.getElementById("faq-charcount").innerHTML="";
+}
 function addFaq(){
   const q=document.getElementById("new-faq-q").value.trim();
   const a=document.getElementById("new-faq-a").value.trim();
@@ -643,6 +652,12 @@ function makeSpots(){
 }
 function updateSpotCount(){const n=document.getElementById("spot-output").value.length;document.getElementById("spot-charcount").innerText=n?("文字数："+n+"文字（一休は5000文字まで）"):"";}
 function copySpots(){navigator.clipboard.writeText(document.getElementById("spot-output").value).then(()=>{const b=document.getElementById("spot-copybtn");b.textContent="✅ コピーしました";setTimeout(()=>b.textContent="📋 コピー",1500);});}
+function clearSpots(){
+  document.querySelectorAll(".spot-chk").forEach(c=>c.checked=false);
+  document.getElementById("spot-name").value="";
+  document.getElementById("spot-output").value="";
+  document.getElementById("spot-charcount").innerText="";
+}
 function addSpot(){
   const name=document.getElementById("new-spot-name").value.trim();
   const tags=document.getElementById("new-spot-tags").value.split(/[,、\s　]+/).filter(Boolean);
@@ -745,6 +760,11 @@ function saveSeason(){
   localStorage.setItem("mk_season",JSON.stringify(season));
   document.getElementById("season-msg").textContent="✅ 保存しました（このMacの中だけ）";
   setTimeout(()=>document.getElementById("season-msg").textContent="",2500);
+}
+function clearSeasonInputs(){
+  if(!confirm("季節メモの入力欄を全部空にしますか？\n（「保存」を押すまでは、ページを再読み込みすれば元に戻せます）"))return;
+  for(let m=1;m<=12;m++){PERIODS.forEach(([k])=>{const el=document.getElementById("se-"+m+"-"+k);if(el)el.value="";});}
+  document.getElementById("season-msg").textContent="入力欄を空にしました（保存するまで確定しません）";
 }
 
 // ================= 改善ログ =================
