@@ -103,10 +103,16 @@
       <h2>③ 歓迎メールの下書き</h2>
       <div class="toolbar">
         <button class="btn btn-main" onclick="generate()">✨ 下書きを作る</button>
-        <button class="btn btn-sub" id="copybtn" onclick="copyOut()">📋 コピー</button>
+        <button class="btn btn-sub" id="copybtn" onclick="copyOut()">📋 本文をコピー</button>
         <button class="btn btn-sub btn-small" onclick="claudePrompt()">🤖 Claudeに磨いてもらう文をコピー</button>
       </div>
-      <textarea id="output" placeholder="ここに下書きが出ます。手で直してからコピーしてOK"></textarea>
+      <div id="sendinfo" style="display:none;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:48px 1fr auto;gap:6px 8px;align-items:center;font-size:.86rem">
+          <span style="color:#8a7d7a">宛先</span><input type="text" id="to-disp" readonly style="border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:.85rem;background:#fff"><button class="btn btn-sub btn-small" onclick="copyField('to-disp',this)">コピー</button>
+          <span style="color:#8a7d7a">件名</span><input type="text" id="subj-disp" readonly style="border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:.85rem;background:#fff"><button class="btn btn-sub btn-small" onclick="copyField('subj-disp',this)">コピー</button>
+        </div>
+      </div>
+      <textarea id="output" placeholder="ここに本文が出ます（宛先・件名は上の欄）。手で直してからコピーしてOK"></textarea>
       <p class="note" id="tempnote"></p>
       <div id="tempbox" style="display:none;background:var(--green-bg);border:1px solid #cfdcc0;border-radius:10px;padding:9px 13px;margin:6px 0;font-size:.84rem">
         <a id="jmalink" href="#" target="_blank" rel="noopener" style="color:var(--rose-dark);font-weight:600;text-decoration:none">📊 気象庁で日別平年気温を確認する</a>
@@ -395,8 +401,11 @@ function generate(){
   L.push("それでは、スタッフ一同お会いできるのを楽しみにしております（＾＾）"+(isLocal?"お気をつけてお越しください。":"遠路となりますので休憩を取りながら安全運転でお越しください。"));
 
   const email=gV("f-email");
-  const head="────────────────────\n宛先：" + (email?email:"⚠️※要確認（お客様の実アドレスを確認！489ban宛はNG）") + "\n件名：【enCamp】ご予約ありがとうございます（"+dispDate+"ご宿泊）\n────────────────────\n\n";
-  document.getElementById("output").value = head + L.join("\n\n");
+  // 宛先・件名は本文と分けて上の欄に表示（本文はそのままコピーできるように）
+  document.getElementById("to-disp").value = email?email:"⚠️※要確認（お客様の実アドレスを確認！489ban宛はNG）";
+  document.getElementById("subj-disp").value = "【enCamp】ご予約ありがとうございます（"+dispDate+"ご宿泊）";
+  document.getElementById("sendinfo").style.display="block";
+  document.getElementById("output").value = L.join("\n\n");
   // 気温の出どころを表示＋気象庁リンク＋上書き欄
   const tn=document.getElementById("tempnote");
   const box=document.getElementById("tempbox");
@@ -419,13 +428,15 @@ function generate(){
 
 // ================= コピー =================
 function copyOut(){
-  const o=document.getElementById("output");
-  // 宛先ヘッダーを除いて本文だけコピー
-  const body=o.value.replace(/^────[\s\S]*?────+\n\n/,"");
-  navigator.clipboard.writeText(body).then(()=>{
+  navigator.clipboard.writeText(document.getElementById("output").value).then(()=>{
     const b=document.getElementById("copybtn");
     b.classList.add("copied"); b.textContent="✅ コピーしました";
-    setTimeout(()=>{b.classList.remove("copied");b.textContent="📋 コピー";},1600);
+    setTimeout(()=>{b.classList.remove("copied");b.textContent="📋 本文をコピー";},1600);
+  });
+}
+function copyField(id,btn){
+  navigator.clipboard.writeText(document.getElementById(id).value).then(()=>{
+    const o=btn.textContent; btn.textContent="✅"; setTimeout(()=>btn.textContent=o,1200);
   });
 }
 function claudePrompt(){
@@ -442,8 +453,11 @@ function saveOverride(){
   document.getElementById("ov-msg").textContent="✅ "+window.curMonth+"月"+window.curDay+"日を記憶しました。次からこの日は自動で入ります。";
 }
 function clearAll(){
-  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-email","f-pet","f-plan","output"].forEach(id=>setV(id,""));
+  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
   document.getElementById("warnings").innerHTML="";
+  document.getElementById("sendinfo").style.display="none";
+  document.getElementById("tempbox").style.display="none";
+  document.getElementById("tempnote").innerHTML="";
 }
 
 // ================= 季節メモ =================
