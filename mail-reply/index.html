@@ -84,7 +84,7 @@
       <h2>② 読み取り結果（直せます）</h2>
       <div class="card">
         <div class="fields">
-          <label>宛名（姓）</label><input type="text" id="f-name" placeholder="例：山田">
+          <label>宛名</label><input type="text" id="f-name" placeholder="例：山田花子（フルネーム）">
           <label>宿泊日</label><input type="text" id="f-date" placeholder="例：2026/07/26">
           <label>人数の内訳</label><input type="text" id="f-people" placeholder="例：大人2名・小学生2名">
           <label>合計人数</label><input type="text" id="f-total" placeholder="例：4">
@@ -250,11 +250,9 @@ function pick(re,txt){const m=txt.match(re);return m?m[1].trim():"";}
 function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
-  // 氏名 → 姓のみ推定（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様の前まで）
+  // 氏名 → フルネーム（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様は除く）
   let nameRaw=pick(/(?:氏名|お名前|名前)\]?\s*[:：]\s*([^\n(（]+)/,t);
-  let name=nameRaw.replace(/様\s*$/,"").replace(/\s+$/,"").trim();
-  if(name.includes(" ")||name.includes("　")) name=name.split(/[ 　]+/)[0];
-  else if(name.length>=3) name=name.slice(0,2); // 例:山田花子→山田(要確認)
+  let name=nameRaw.replace(/様\s*$/,"").replace(/[\s　]+/g,"").trim();
   // 宿泊日（★予約受付日時は宿泊日ではないので必ず除外してから探す）
   let date="";
   {
@@ -313,9 +311,7 @@ function parseMail(){
   if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
   if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
   if(from==="地元") w.push("🏠 長野県内のお客様なので「遠路」の表現は外します。");
-  const name4=pick(/(?:氏名|お名前|名前)\]?\s*[:：]\s*([^\n(（]+)/,t);
   if(!name) w.push("⚠️ お客様のお名前が読み取れませんでした。②の「宛名」を手で入れてください。");
-  else if(name4&&name4.replace(/様/,"").replace(/[ 　]/g,"").length>=3&&!name4.includes(" ")&&!name4.includes("　")) w.push("✏️ 姓の区切りを推定しました（「"+name+"」）。違ったら直してください。");
   document.getElementById("warnings").innerHTML = w.length? '<div class="warnbox">'+w.join("<br>")+'</div>' : '<div class="okbox">✅ 読み取りOK。②を確認して「下書きを作る」へ。</div>';
 }
 function setV(id,v){document.getElementById(id).value=v;}
@@ -331,7 +327,7 @@ function generate(){
   const dateRaw=gV("f-date");
   let mm=0,dispDate="※宿泊日";
   const dm=dateRaw.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-  if(dm){mm=parseInt(dm[2]);dispDate=zen(parseInt(dm[2]))+"月"+zen(parseInt(dm[3]))+"日";}
+  if(dm){mm=parseInt(dm[2]);dispDate=parseInt(dm[2])+"月"+parseInt(dm[3])+"日";}
   const total=gV("f-total")||"※";
   const people=gV("f-people");
   const from=gV("f-from");
@@ -365,7 +361,7 @@ function generate(){
 
   const L=[];
   // 1 あいさつ
-  let g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのenCampスタッフ・柳と申します。この度は"+dispDate+"泊"+zen(total)+"名様"+(people?"（"+people+"）":"");
+  let g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのenCampスタッフ・柳と申します。この度は"+dispDate+"泊"+total+"名様"+(people?"（"+people+"）":"");
   if(pet){
     // 「チワックス 1頭 同伴予定です」→「チワックス」だけ取り出す
     let petName=pet.replace(/同伴予定です|同伴です|を?連れて行きます|同伴/g,"").replace(/[0-9０-９]+\s*[頭匹]/g,"").replace(/[ 　]+/g," ").trim();
