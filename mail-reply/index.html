@@ -113,6 +113,7 @@
         </div>
       </div>
       <textarea id="output" placeholder="ここに本文が出ます（宛先・件名は上の欄）。手で直してからコピーしてOK"></textarea>
+      <div id="charcount" class="note" style="text-align:right;margin-top:2px"></div>
       <p class="note" id="tempnote"></p>
       <div id="tempbox" style="display:none;background:var(--green-bg);border:1px solid #cfdcc0;border-radius:10px;padding:9px 13px;margin:6px 0;font-size:.84rem">
         <a id="jmalink" href="#" target="_blank" rel="noopener" style="color:var(--rose-dark);font-weight:600;text-decoration:none">📊 気象庁で日別平年気温を確認する</a>
@@ -262,6 +263,7 @@ function pick(re,txt){const m=txt.match(re);return m?m[1].trim():"";}
 function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
+  window.isIkyu = /一休|ikyu|通知連番|宿泊延べ人数/.test(t); // 一休は返信5000文字上限
   // 氏名 → フルネーム（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様は除く）
   let nameRaw=pick(/(?:氏名|お名前|名前|宿泊代表者)\]?[\s　]*[:：][\s　]*([^\n(（]+)/,t);
   let name=nameRaw.replace(/様\s*$/,"").replace(/[\s　]+/g,"").trim();
@@ -329,6 +331,7 @@ function parseMail(){
   const w=[];
   if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
+  if(window.isIkyu) w.push("📮 一休の予約です。返信は<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
   if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
   if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
   if(from==="地元") w.push("🏠 長野県内のお客様なので「遠路」の表現は外します。");
@@ -423,6 +426,7 @@ function generate(){
   document.getElementById("subj-disp").value = "【enCamp】ご予約ありがとうございます（"+dispDate+"ご宿泊）";
   document.getElementById("sendinfo").style.display="block";
   document.getElementById("output").value = L.join("\n\n");
+  updateCharCount();
   // 気温の出どころを表示＋気象庁リンク＋上書き欄
   const tn=document.getElementById("tempnote");
   const box=document.getElementById("tempbox");
@@ -444,6 +448,17 @@ function generate(){
 }
 
 // ================= コピー =================
+function updateCharCount(){
+  const n=document.getElementById("output").value.length;
+  const el=document.getElementById("charcount");
+  if(!n){el.innerHTML="";return;}
+  if(window.isIkyu){
+    const over=n>5000;
+    el.innerHTML="本文の文字数：<strong style='color:"+(over?"#c0392b":"#7a8a6a")+"'>"+n+" / 5000</strong>（一休の送信上限）"+(over?" ⚠️ 超えています。短くしてください":" ✅");
+  } else {
+    el.innerHTML="本文の文字数："+n+"文字";
+  }
+}
 function copyOut(){
   navigator.clipboard.writeText(document.getElementById("output").value).then(()=>{
     const b=document.getElementById("copybtn");
@@ -518,6 +533,7 @@ function addLog(){
 function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringify(logs));renderLogs();}
 
 renderSeason(); renderLogs();
+document.getElementById("output").addEventListener("input",updateCharCount);
 </script>
 </body>
 </html>
