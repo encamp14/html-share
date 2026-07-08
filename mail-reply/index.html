@@ -345,6 +345,9 @@ document.querySelectorAll(".tab").forEach(t=>{
 
 // ================= 読み取り =================
 function pick(re,txt){const m=txt.match(re);return m?m[1].trim():"";}
+// 動物の辞書。OK＝犬(犬種含む)・小鳥・小動物（宿泊可・テント確認）／NG＝猫など（宿泊できないかも）
+const OK_ANIMAL=/犬|いぬ|イヌ|わんちゃん|ワンちゃん|ドッグ|愛犬|小鳥|インコ|文鳥|セキセイ|オカメ|ハムスター|モルモット|ハリネズミ|チンチラ|デグー|うさぎ|ウサギ|トイプードル|プードル|チワワ|チワックス|ダックス|柴犬|豆柴|ポメラニアン|ヨーキー|ヨークシャ|シーズー|マルチーズ|コーギー|レトリバー|ラブラドール|ゴールデン|フレンチブル|フレブル|ブルドッグ|パグ|ビーグル|ボーダーコリー|シュナウザー|ペキニーズ|パピヨン|スピッツ|ジャックラッセル|ボストンテリア|キャバリア|ウェルシュ|秋田犬|ハスキー|シェパード|ダルメシアン|ドーベルマン/;
+const NG_ANIMAL=/猫|ねこ|ネコ|にゃん|フェレット|ヘビ|蛇|トカゲ|イグアナ|爬虫|ワニ|猿|豚|ブタ|ミニブタ|ヤギ/;
 // 送迎ありか判定（送迎ありなら「安全運転で」の一文を省く）
 function hasPickup(t){
   // 変更通知の【変更前】は古い数字なので各行から除去してから、現在の「× N =」を数える
@@ -447,14 +450,18 @@ function parseMail(){
     if(isQ) w.push("🙋 <strong>お客様が質問しています</strong>：「"+reqTxt+"」→ 文末の「追伸」に回答欄を用意しました。");
     else w.push("📝 <strong>要望があります</strong>：「"+reqTxt+"」→ 文末の「追伸」に対応欄を用意しました。");
   }
-  // 🚨 要注意ワード（アレルギー・宿泊できない動物）
-  const critical=[];
-  if(/アレルギ/.test(reqTxt||t)) critical.push("アレルギー");
-  if(/猫|ねこ|ネコ|フェレット|ヘビ|蛇|トカゲ|イグアナ|爬虫/.test(reqTxt)) critical.push("宿泊できない動物かも（猫など。犬・小鳥・小動物以外）");
+  // 🚨 要注意（アレルギー・動物）。動物は名前や犬種が入っていたら必ずアラート
+  const critical=[], popupLines=[];
+  const animalSrc=reqTxt+" "+(pet||"");
+  if(/アレルギ/.test(reqTxt||t)){ critical.push("⚠️ アレルギーの記載"); popupLines.push("アレルギー"); }
+  const ngHit=(animalSrc.match(NG_ANIMAL)||[])[0];
+  const okHit=(animalSrc.match(OK_ANIMAL)||[])[0];
+  if(ngHit){ critical.push("🚨 宿泊できない動物かも（"+ngHit+"）"); popupLines.push("宿泊できない動物かも（"+ngHit+"）"); }
+  else if(okHit){ critical.push("🐾 動物の同伴（"+okHit+"）※宿泊できるテント種別か要確認"); popupLines.push("動物の同伴（"+okHit+"）— テント種別を確認"); }
   if(critical.length){
-    w.push("🚨 <strong style='color:#c0392b'>要注意："+critical.join(" ・ ")+"</strong> が含まれています。必ず内容を確認してください。");
+    w.push("🚨 <strong style='color:#c0392b'>要注意：</strong>"+critical.join(" ／ ")+"。必ず内容を確認してください。");
     const sig=critical.join()+"|"+reqTxt.length;
-    if(window._lastAlert!==sig){window._lastAlert=sig; alert("🚨 要注意\n"+critical.join(" ・ ")+"\nが予約の要望に含まれています。\n内容を必ず確認してください。");}
+    if(window._lastAlert!==sig){window._lastAlert=sig; alert("🚨 要注意\n\n"+popupLines.join("\n")+"\n\n内容を必ず確認してください。");}
   }
   if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
   if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
