@@ -107,6 +107,7 @@
           <label>記念日プラン</label><input type="text" id="f-celeb" placeholder="飾り付け・シャンパンタワー等があれば「あり」">
           <label>送迎</label><input type="text" id="f-pickup" placeholder="あり／空欄（ありなら「安全運転で」を省く）">
           <label>リピーター</label><input type="text" id="f-repeat" placeholder="あり／空欄（ありなら「はじめまして」を使わない）">
+          <label>要望・質問</label><input type="text" id="f-request" placeholder="あれば文末の「追伸」に回答欄が出ます">
           <label>プラン</label><input type="text" id="f-plan" placeholder="プラン名">
         </div>
       </div>
@@ -436,13 +437,24 @@ function parseMail(){
   if(window.isIkyu) w.push("📮 一休の予約です。返信は<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
   if(hasPickup(t)) w.push("🚐 送迎ありの予約です。文末の「遠路となりますので…安全運転で」の一文は省きます。");
   if(isRepeat) w.push("🔁 リピーターのお客様です（過去に宿泊）。挨拶を「いつもありがとうございます」にします。");
-  // お客様の要望・質問の拾い上げ
+  // お客様の要望・質問の拾い上げ（→ 文末の「追伸」に回答欄を用意）
   const reqTxt=(pick(/その他ご要望[^:：]*[:：]\s*([^\n]*)/,t) || pick(/(?:ご要望・?ご?質問|備考)[^:：]*[:：]\s*([^\n]*)/,t) || "").trim();
-  const reqClean=reqTxt.replace(/特にありません|特になし|特に無し|なし。?/g,"").trim();
-  if(reqTxt){
-    if(/[？?]/.test(reqTxt)) w.push("🙋 <strong>お客様が質問しています</strong>：「"+reqTxt+"」→ 下書きに回答を入れてください（分からなければ確認）。");
-    else if(/アレルギ|食べられない|苦手|ベジタリアン|卵|乳製品|そば|エビ|カニ|グルテン|離乳食/.test(reqTxt)) w.push("⚠️ <strong>食事・アレルギーの要望かも</strong>：「"+reqTxt+"」→ キッチンへ共有を。");
-    else if(reqClean.length>=3) w.push("📝 要望欄にメモがあります：「"+reqTxt+"」");
+  const reqClean=reqTxt.replace(/特にありません|特になし|特に無し|なし。?|(当日[はも]?)?よろしくお願い(いた)?します[！!。]*|楽しみに?(しています|です)[。！!]*/g,"").trim();
+  const isQ=/[？?]|でしょうか|ますか|いただけますか|できますか/.test(reqTxt);
+  const reqForField=(isQ||reqClean.length>=2)?reqTxt:"";
+  setV("f-request",reqForField);
+  if(reqForField){
+    if(isQ) w.push("🙋 <strong>お客様が質問しています</strong>：「"+reqTxt+"」→ 文末の「追伸」に回答欄を用意しました。");
+    else w.push("📝 <strong>要望があります</strong>：「"+reqTxt+"」→ 文末の「追伸」に対応欄を用意しました。");
+  }
+  // 🚨 要注意ワード（アレルギー・宿泊できない動物）
+  const critical=[];
+  if(/アレルギ/.test(reqTxt||t)) critical.push("アレルギー");
+  if(/猫|ねこ|ネコ|フェレット|ヘビ|蛇|トカゲ|イグアナ|爬虫/.test(reqTxt)) critical.push("宿泊できない動物かも（猫など。犬・小鳥・小動物以外）");
+  if(critical.length){
+    w.push("🚨 <strong style='color:#c0392b'>要注意："+critical.join(" ・ ")+"</strong> が含まれています。必ず内容を確認してください。");
+    const sig=critical.join()+"|"+reqTxt.length;
+    if(window._lastAlert!==sig){window._lastAlert=sig; alert("🚨 要注意\n"+critical.join(" ・ ")+"\nが予約の要望に含まれています。\n内容を必ず確認してください。");}
   }
   if(pet) w.push("🐕 ワンちゃん連れです。本文にひとこと入れます。");
   if(celeb) w.push("🎉 記念日プラン（飾り付け・シャンパンタワー等）です。お祝いの内容・年齢・性別をたずねる一文を入れます。");
@@ -543,6 +555,9 @@ function generate(){
   else if(isLocal) closer+="お気をつけてお越しください。";
   else closer+="遠路となりますので休憩を取りながら安全運転でお越しください。";
   L.push(closer);
+  // 追伸：予約時の問い合わせ・要望への回答欄
+  const reqField=gV("f-request");
+  if(reqField) L.push("追伸：ご予約時にいただいた「"+reqField+"」につきまして、〔※こちらに回答・ご対応をご記入ください〕。");
 
   const email=gV("f-email");
   // 宛先・件名は本文と分けて上の欄に表示（本文はそのままコピーできるように）
@@ -727,7 +742,7 @@ function saveOverride(){
   document.getElementById("ov-msg").textContent="✅ "+window.curMonth+"月"+window.curDay+"日を記憶しました。次からこの日は自動で入ります。";
 }
 function clearAll(){
-  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-pickup","f-repeat","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
+  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-pickup","f-repeat","f-request","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
   document.getElementById("warnings").innerHTML="";
   document.getElementById("sendinfo").style.display="none";
   document.getElementById("tempbox").style.display="none";
