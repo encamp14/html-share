@@ -463,7 +463,11 @@ function parseMail(){
   // 🚨 要注意（アレルギー・動物）。動物は名前や犬種が入っていたら必ずアラート
   const critical=[], popupLines=[];
   const animalSrc=reqTxt+" "+(pet||"");
-  if(/アレルギ/.test(reqTxt||t)){ critical.push("⚠️ アレルギーの記載"); popupLines.push("アレルギー"); }
+  if(/アレルギ/.test(reqTxt||t)){
+    const allergyLine=(reqTxt.split(/\n+/).find(l=>/アレルギ/.test(l))||"アレルギーの記載").trim();
+    critical.push("🍤 <strong>アレルギー：「"+allergyLine+"」</strong>（キッチンへ必ず共有）");
+    popupLines.push("🍤 アレルギー：「"+allergyLine+"」");
+  }
   const ngHit=(animalSrc.match(NG_ANIMAL)||[])[0];
   const okHit=(animalSrc.match(OK_ANIMAL)||[])[0];
   if(ngHit){ critical.push("🚨 宿泊できない動物かも（"+ngHit+"）"); popupLines.push("宿泊できない動物かも（"+ngHit+"）"); }
