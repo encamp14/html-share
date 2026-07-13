@@ -441,10 +441,15 @@ function parseMail(){
   if(hasPickup(t)) w.push("🚐 送迎ありの予約です。文末の「遠路となりますので…安全運転で」の一文は省きます。");
   if(isRepeat) w.push("🔁 リピーターのお客様です（過去に宿泊）。挨拶を「いつもありがとうございます」にします。");
   // お客様の要望・質問の拾い上げ（→ 文末の「追伸」に回答欄を用意）
-  const reqTxt=(pick(/その他ご要望[^:：]*[:：]\s*([^\n]*)/,t) || pick(/(?:ご要望・?ご?質問|備考)[^:：]*[:：]\s*([^\n]*)/,t) || "").trim();
+  let reqTxt=(pick(/その他ご要望[^:：]*[:：]\s*([^\n]*)/,t) || pick(/(?:ご要望・?ご?質問|備考)[^:：]*[:：]\s*([^\n]*)/,t) || "").trim();
+  // 念のため：区切り線やセクション見出し(▼ご宿泊料金など)が混じっても要望の1行目だけにする
+  reqTxt=reqTxt.split(/[▼■]/)[0].replace(/[=＝]{3,}.*/,"").trim();
   const reqClean=reqTxt.replace(/特にありません|特になし|特に無し|なし。?|(当日[はも]?)?よろしくお願い(いた)?します[！!。]*|楽しみに?(しています|です)[。！!]*/g,"").trim();
   const isQ=/[？?]|でしょうか|ますか|いただけますか|できますか/.test(reqTxt);
-  const reqForField=(isQ||reqClean.length>=2)?reqTxt:"";
+  // ペット(動物名)だけの記載は追伸にしない（挨拶で歓迎＋動物アラートで処理する）
+  const animalStripped=reqClean.replace(OK_ANIMAL,"").replace(NG_ANIMAL,"").replace(/[0-9０-９]+\s*[頭匹羽]/g,"").replace(/[、。・\s　と一緒連れ同伴]/g,"").trim();
+  const isAnimalOnly=!isQ && (OK_ANIMAL.test(reqTxt)||NG_ANIMAL.test(reqTxt)) && animalStripped.length<2;
+  const reqForField=(isQ||(reqClean.length>=2 && !isAnimalOnly))?reqTxt:"";
   setV("f-request",reqForField);
   if(reqForField){
     if(isQ) w.push("🙋 <strong>お客様が質問しています</strong>：「"+reqTxt+"」→ 文末の「追伸」に回答欄を用意しました。");
