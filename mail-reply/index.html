@@ -368,7 +368,7 @@ function parseMail(){
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
   window.isIkyu = /一休|ikyu|通知連番|宿泊延べ人数/.test(t); // 一休は返信5000文字上限
   // 氏名 → フルネーム（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様は除く）
-  let nameRaw=pick(/(?:氏名|お名前|名前|宿泊代表者)\]?[\s　]*[:：][\s　]*([^\n(（]+)/,t);
+  let nameRaw=pick(/(?:氏名|お名前|名前)[】\]]?[\s　]*[:：]?[\s　]*([^\n(（]+)/,t);
   let name=nameRaw.replace(/様\s*$/,"").replace(/[\s　]+/g,"").trim();
   // 宿泊日（★予約受付日時は宿泊日ではないので必ず除外してから探す）
   let date="";
@@ -393,9 +393,11 @@ function parseMail(){
     [...sumLine.matchAll(/(?:小学生|小学校[低中高]学年|中学生|高校生|子供|こども|児童)[\s　]*(\d+)/g)].forEach(m=>kids+=parseInt(m[1]));
     [...sumLine.matchAll(/(?:幼児|乳児|未就学児?)[\s　]*(\d+)/g)].forEach(m=>infants+=parseInt(m[1]));
   } else {
-    adults=parseInt((t.match(/大人[\s　]*[:：][\s　]*(\d+)\s*[名人]/)||[])[1]||0);
-    (t.match(/(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))kids+=lastCount(l);});
-    (t.match(/(?:幼児|乳児|未就学児?)[^\n]*/g)||[]).forEach(l=>{if(/[:：]\d+\s*[名人]/.test(l))infants+=lastCount(l);});
+    // 「大人:2名」「大人 ： 2名」「【大人】2名」など各形式に対応。行の最初の「◯名」を人数として拾う（男性/女性の内訳は無視）
+    const firstCount=line=>{const m=line.match(/(\d+)[\s　]*[名人]/);return m?parseInt(m[1]):0;};
+    adults=firstCount((t.match(/大人[^\n]*/)||[])[0]||"");
+    (t.match(/(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\n]*/g)||[]).forEach(l=>kids+=firstCount(l));
+    (t.match(/(?:幼児|乳児|未就学児?)[^\n]*/g)||[]).forEach(l=>infants+=firstCount(l));
   }
   let people=[];
   if(adults)people.push("大人"+adults+"名");
@@ -403,10 +405,10 @@ function parseMail(){
   if(infants)people.push("幼児"+infants+"名");
   const total=(parseInt(adults)||0)+kids+infants;
   // 住所 → 都道府県（標高のたとえ用）と 出発地の市（本文用）
-  let addr=pick(/(?:ご住所|住所)\]?[\s　]*[:：][\s　]*([^\n]+)/,t);
+  let addr=pick(/(?:ご住所|住所)[】\]]?[\s　]*[:：]?[\s　]*([^\n]+)/,t);
   if(!addr){addr=pick(/都道府県[\s　]*[:：][\s　]*([^\n]+)/,t);} // 一休：宿泊代表者都道府県：愛知県
   let pref="",from="";
-  const pm=addr.match(/(東京都|北海道|京都府|大阪府|.{1,3}県)/);
+  const pm=addr.match(/(東京都|北海道|京都府|大阪府|[一-龥]{2,3}県)/);
   if(pm) pref=pm[1].replace(/[都府県]$/,""); // 東京都→東京／北海道→北海道／神奈川県→神奈川
   const cm=addr.match(/[都道府県][\s　]*([^\s　0-9０-９]+?[市区町村])/);
   const city=cm?cm[1]:"";
@@ -472,6 +474,7 @@ function parseMail(){
   const okHit=(animalSrc.match(OK_ANIMAL)||[])[0];
   if(ngHit){ critical.push("🚨 宿泊できない動物かも（"+ngHit+"）"); popupLines.push("宿泊できない動物かも（"+ngHit+"）"); }
   else if(okHit){ critical.push("🐾 動物の同伴（"+okHit+"）※宿泊できるテント種別か要確認"); popupLines.push("動物の同伴（"+okHit+"）— テント種別を確認"); }
+  if(celeb){ critical.push("🎉 <strong>記念日プラン（飾り付け・シャンパンタワー）</strong>"); popupLines.push("🎉 記念日プラン（飾り付け・シャンパンタワー）— お祝い内容・年齢・性別を確認して準備を"); }
   if(critical.length){
     w.push("🚨 <strong style='color:#c0392b'>要注意：</strong>"+critical.join(" ／ ")+"。必ず内容を確認してください。");
     const sig=critical.join()+"|"+reqTxt.length;
