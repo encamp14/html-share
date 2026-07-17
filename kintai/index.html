@@ -604,6 +604,7 @@ function dayPayload(date, code) {
     date, youbi: YOUBI[dd.getDay()], code,
     name: emp ? emp.name : '',
     kind: emp ? (emp.kind || '') : '',
+    type: rec.t || '打刻',              // 記録の種類（打刻／追加／修正）
     in: rec.in || '', out: rec.out || '',
     go1: rec.go1 || '', bk1: rec.bk1 || '',
     go2: rec.go2 || '', bk2: rec.bk2 || '',
@@ -611,10 +612,20 @@ function dayPayload(date, code) {
     office: office.code + '：' + office.name
   };
 }
-function syncDay(date, code) {
+// 打刻シートを「種類」列つきで丸ごと最新にする
+function syncDakoku() {
   if (!syncUrl) return;
-  sendToSheet({ type: 'upsert', row: dayPayload(date, code) });
+  const rows = [];
+  for (const date of Object.keys(records).sort()) {
+    for (const code of Object.keys(records[date]).sort((a,b) => Number(a)-Number(b))) {
+      const p = dayPayload(date, code);
+      rows.push([p.date, p.youbi, p.code, p.name, p.kind, p.type,
+        p.in, p.out, p.go1, p.bk1, p.go2, p.bk2, p.work, p.office]);
+    }
+  }
+  pushSheet('打刻', ['日付','曜日','社員コード','氏名','区分','種類','出勤','退勤','外出1','戻り1','外出2','戻り2','勤務時間','事業所'], rows);
 }
+function syncDay(date, code) { syncDakoku(); }  // 呼び出し互換（丸ごと更新）
 
 // 表まるごと1シートに送る（スタッフ・月集計・売上・シフト・掲示板はこの方式で上書き）
 function pushSheet(name, headers, rows) {
@@ -780,8 +791,9 @@ function punch(kind) {
     else { setMsg('外出の打刻がありません', false); return; }
   }
 
+  rec.t = '打刻';                 // ふつうの打刻として記録
   save(LS_REC, records);
-  syncDay(day, code);
+  syncDakoku();
   renderStatus(code);
   setMsg(emp.name + ' さん　' + done + ' ' + t + ' を記録しました', true);
   scheduleReset();
@@ -1172,26 +1184,24 @@ function saveFix() {
     const key = ym + '-' + pad(d);
     const oldRec = (records[key] && records[key][code]) ? { ...records[key][code] } : {};
     const newRec = fixRowRec(d);
+    if (recEqual(oldRec, newRec)) continue;   // 変わっていない日は何もしない
+
     const oldHas = Object.keys(oldRec).length > 0;
     const newHas = Object.keys(newRec).length > 0;
+    const type = !oldHas ? '追加' : !newHas ? '取消' : '修正';
 
-    // 実際の書き換え
+    // 書き換え（追加・修正は種類を記録／取消は削除）
     if (newHas) {
       if (!records[key]) records[key] = {};
+      newRec.t = type;               // この行の種類を打刻シートに残す
       records[key][code] = newRec;
-      syncDay(key, code);
     } else if (oldHas) {
       delete records[key][code];
-      syncDay(key, code);
       if (!Object.keys(records[key]).length) delete records[key];
     }
 
-    // 変わったら履歴に残す（不正対策）
-    if (!recEqual(oldRec, newRec)) {
-      const type = !oldHas ? '追加' : !newHas ? '取消' : '修正';
-      changes.push({ time: nowStamp(), date: key, code, name: empName, type,
-        before: recStr(oldRec), after: recStr(newRec) });
-    }
+    changes.push({ time: nowStamp(), date: key, code, name: empName, type,
+      before: recStr(oldRec), after: recStr(newRec) });
   }
   save(LS_REC, records);
 
@@ -1200,7 +1210,7 @@ function saveFix() {
     save(LS_FIXLOG, fixLog);
     syncFixLog();
   }
-  if (syncUrl) { syncSummaryAll(); syncDowAll(); rebuildDash(); }
+  if (syncUrl) { syncDakoku(); syncSummaryAll(); syncDowAll(); rebuildDash(); }
   renderFixLog();
   alert('保存しました'
     + (changes.length ? '（' + changes.length + '件を修正履歴に記録）' : '（変更なし）')
@@ -1536,19 +1546,11 @@ function testSync() {
 }
 function fullSync() {
   if (!syncUrl) { alert('先にURLを入れて「保存する」を押してください'); return; }
-  const rows = [];
-  for (const date of Object.keys(records).sort()) {
-    for (const code of Object.keys(records[date])) rows.push(dayPayload(date, code));
-  }
   if (!confirm('今アプリにある全データ（打刻・スタッフ・月集計・売上・シフト・掲示板）をスプレッドシートに送り、グラフも更新します。よろしいですか？')) return;
-  // 打刻は小分けにして送る（1件ずつ上書き）
-  for (let i = 0; i < rows.length; i += 100) {
-    sendToSheet({ type: 'bulk', rows: rows.slice(i, i + 100) });
-  }
-  // ほかのデータは表まるごと送る
-  syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
+  // すべてのシートを丸ごと最新にする
+  syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
-  alert('全データを送りました（打刻 ' + rows.length + ' 件ほか）。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
+  alert('全データを送りました。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
 }
 
 function backupData() {
