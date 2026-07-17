@@ -376,7 +376,12 @@
       </div>
       <div style="overflow-x:auto; max-height:480px;"><table class="fix-table" id="fixTable"></table></div>
       <p class="note">※ 打ち忘れ・押し間違いはここで直せます。時刻を入れたり消したりして「この内容で保存する」。<br>
-      ※ 「クリア」でその日の打刻を全部消せます（保存を押すまで確定しません）。</p>
+      ※ 「クリア」でその日の打刻を全部消せます（保存を押すまで確定しません）。<br>
+      ※ <b>修正・取消・追加をすると、下の「修正の記録」に自動で残ります（不正対策）。</b></p>
+
+      <h3 style="margin-top:22px;">🛡 修正の記録（不正対策）</h3>
+      <p class="note">誰かが打刻を後から変えたら、ここに「いつ・どの日を・どう変えたか（前→後）」が自動で残ります。消せません。</p>
+      <div style="overflow-x:auto; max-height:300px;"><table id="fixLogTable"></table></div>
     </div>
 
     <!-- 月の集計・給与 -->
@@ -526,6 +531,7 @@ const LS_BOARD = 'kintai_board';
 const LS_SALES = 'kintai_sales';
 const LS_PIN = 'kintai_pin';
 const LS_SYNC = 'kintai_syncurl';
+const LS_FIXLOG = 'kintai_fixlog';
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -539,6 +545,7 @@ let shifts    = load(LS_SHIFT, {}); // { "2026-07": { "1": {"5":"9-17"} } }
 let board     = load(LS_BOARD, []); // [{time, title, body}]
 let sales     = load(LS_SALES, {}); // { "2026-07-07": {amount, memo} }
 let pin       = load(LS_PIN, '9999');
+let fixLog    = load(LS_FIXLOG, []); // 修正履歴 [{time,date,code,name,type,before,after}]
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbybT8FYsv8_nGhNZG5v5yzVgoUXTwlUTwtsnpAb0I4TelK63XOl8v1s4rwvVQmYo6z7JQ/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
@@ -641,6 +648,11 @@ function syncShiftAll() {
 }
 function syncBoard() {
   pushSheet('掲示板', ['日時','タイトル','内容'], board.map(p => [p.time, p.title || '', p.body || '']));
+}
+// 修正履歴（不正対策の記録）をスプレッドシートへ
+function syncFixLog() {
+  const rows = fixLog.map(l => [l.time, l.type, l.date, l.code, l.name, l.before, l.after]);
+  pushSheet('修正履歴', ['変更した日時','種類','対象の日','社員コード','氏名','変更前','変更後'], rows);
 }
 function syncSummaryAll() {
   const months = [...new Set(Object.keys(records).map(k => k.slice(0,7)))].sort();
@@ -1097,6 +1109,25 @@ function renderFix() {
       + '<td><button class="del" onclick="clearFixRow(' + d + ')">クリア</button></td></tr>';
   }
   tbl.innerHTML = html;
+  renderFixLog();
+}
+
+// 修正の記録を画面に表示（新しい順）
+function renderFixLog() {
+  const tbl = document.getElementById('fixLogTable');
+  if (!tbl) return;
+  const color = { '追加':'#0a7a2f', '修正':'#c07a00', '取消':'#c00' };
+  let html = '<tr><th style="width:130px">変更した日時</th><th style="width:60px">種類</th><th style="width:90px">対象の日</th><th>氏名</th><th>変更前</th><th>変更後</th></tr>';
+  for (const l of fixLog.slice(0, 100)) {
+    html += '<tr><td>' + escapeHtml(l.time) + '</td>'
+      + '<td style="font-weight:bold;color:' + (color[l.type]||'#333') + '">' + escapeHtml(l.type) + '</td>'
+      + '<td>' + escapeHtml(l.date) + '</td>'
+      + '<td class="name">' + escapeHtml(l.name) + '</td>'
+      + '<td style="color:#888">' + escapeHtml(l.before) + '</td>'
+      + '<td><b>' + escapeHtml(l.after) + '</b></td></tr>';
+  }
+  if (!fixLog.length) html += '<tr><td colspan="6">まだ修正の記録はありません。</td></tr>';
+  tbl.innerHTML = html;
 }
 
 function fixRowRec(d) {
@@ -1115,27 +1146,65 @@ function clearFixRow(d) {
   fixRowTime(d);
 }
 
+// 打刻の内容を読みやすい文字にする（変更前後の記録用）
+function recStr(rec) {
+  if (!rec || !Object.keys(rec).length) return '（なし）';
+  const lbl = {in:'出勤', out:'退勤', go1:'外出1', bk1:'戻り1', go2:'外出2', bk2:'戻り2'};
+  return FIELDS.filter(f => rec[f]).map(f => lbl[f] + ' ' + rec[f]).join(' / ');
+}
+function recEqual(a, b) {
+  return FIELDS.every(f => (a[f] || '') === (b[f] || ''));
+}
+function nowStamp() {
+  const d = new Date();
+  return d.getFullYear() + '/' + pad(d.getMonth()+1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
 function saveFix() {
   const ym = document.getElementById('fixMonth').value;
   const code = document.getElementById('fixEmp').value;
   if (!ym || !code) return;
+  const emp = findEmp(code);
+  const empName = emp ? emp.name : '(削除済み)';
   const n = daysInMonth(ym);
+  const changes = [];
   for (let d = 1; d <= n; d++) {
     const key = ym + '-' + pad(d);
-    const rec = fixRowRec(d);
-    if (Object.keys(rec).length) {
+    const oldRec = (records[key] && records[key][code]) ? { ...records[key][code] } : {};
+    const newRec = fixRowRec(d);
+    const oldHas = Object.keys(oldRec).length > 0;
+    const newHas = Object.keys(newRec).length > 0;
+
+    // 実際の書き換え
+    if (newHas) {
       if (!records[key]) records[key] = {};
-      records[key][code] = rec;
+      records[key][code] = newRec;
       syncDay(key, code);
-    } else if (records[key] && records[key][code]) {
+    } else if (oldHas) {
       delete records[key][code];
-      syncDay(key, code); // 空にした日も「消えた」形で送って上書き
+      syncDay(key, code);
       if (!Object.keys(records[key]).length) delete records[key];
+    }
+
+    // 変わったら履歴に残す（不正対策）
+    if (!recEqual(oldRec, newRec)) {
+      const type = !oldHas ? '追加' : !newHas ? '取消' : '修正';
+      changes.push({ time: nowStamp(), date: key, code, name: empName, type,
+        before: recStr(oldRec), after: recStr(newRec) });
     }
   }
   save(LS_REC, records);
+
+  if (changes.length) {
+    fixLog = changes.concat(fixLog);   // 新しい変更を先頭に
+    save(LS_FIXLOG, fixLog);
+    syncFixLog();
+  }
   if (syncUrl) { syncSummaryAll(); syncDowAll(); rebuildDash(); }
-  alert('保存しました' + (syncUrl ? '（スプレッドシートにも反映しました）' : ''));
+  renderFixLog();
+  alert('保存しました'
+    + (changes.length ? '（' + changes.length + '件を修正履歴に記録）' : '（変更なし）')
+    + (syncUrl ? '\nスプレッドシートにも反映しました' : ''));
   renderSummary();
 }
 
@@ -1477,14 +1546,14 @@ function fullSync() {
     sendToSheet({ type: 'bulk', rows: rows.slice(i, i + 100) });
   }
   // ほかのデータは表まるごと送る
-  syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard();
+  syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
   alert('全データを送りました（打刻 ' + rows.length + ' 件ほか）。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
 }
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales,
+    employees, records, office, shifts, board, sales, fixLog,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -1502,8 +1571,9 @@ function restoreData(input) {
       employees = data.employees.map(e => ({kind:'パート', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
+      fixLog = data.fixLog || [];
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
-      save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales);
+      save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
       renderOffice(); renderEmpTable(); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
       renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
       alert('読み込みました');
