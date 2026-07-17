@@ -539,7 +539,9 @@ let shifts    = load(LS_SHIFT, {}); // { "2026-07": { "1": {"5":"9-17"} } }
 let board     = load(LS_BOARD, []); // [{time, title, body}]
 let sales     = load(LS_SALES, {}); // { "2026-07-07": {amount, memo} }
 let pin       = load(LS_PIN, '9999');
-let syncUrl   = load(LS_SYNC, '');  // スプレッドシート連携URL（空なら連携オフ）
+// 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
+const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbybT8FYsv8_nGhNZG5v5yzVgoUXTwlUTwtsnpAb0I4TelK63XOl8v1s4rwvVQmYo6z7JQ/exec';
+let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
 
 // 旧データ（時給なし）を新形式にそろえる
 employees = employees.map(e => ({kind:'パート', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
