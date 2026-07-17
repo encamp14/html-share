@@ -1301,12 +1301,14 @@ function buildSlipHTML(ym, code) {
   const emp = findEmp(code);
   if (!per || !emp) return null;
   const [y,m] = ym.split('-');
+  const basePlain = per.base - per.wendPlus;   // 全時間を通常時給で計算した基本給
   const wageRows = per.wage
-    ? '<tr><th>時給</th><td>' + yen(per.wage) + '</td></tr>'
-      + '<tr><th>時給分（勤務時間 × 時給）</th><td>' + yen(per.base) + '</td></tr>'
+    ? '<tr><th>基本給（勤務 ' + fmtMin(per.work) + ' × 時給 ' + yen(per.wage) + '）</th><td>' + yen(basePlain) + '</td></tr>'
+      + (per.wendPlus ? '<tr><th>金土日アップ（週末時給 ' + yen(per.wend) + '・' + fmtMin(per.wendMin) + '分）</th><td>+' + yen(per.wendPlus) + '</td></tr>' : '')
+      + '<tr><th>残業手当</th><td style="color:#999">未設定（ルール決定後に計算）</td></tr>'
       + '<tr><th>交通費（' + yen(per.allow) + ' × ' + per.days + '日）</th><td>' + yen(per.allowTotal) + '</td></tr>'
       + '<tr class="total"><th>支給見込み 合計</th><td>' + yen(per.pay) + '</td></tr>'
-    : '<tr><td colspan="2" style="text-align:center">時給が未登録のため金額は計算していません（月給の方）</td></tr>';
+    : '<tr><td colspan="2" style="text-align:center">時給が未登録のため金額は計算していません（月給の方は時給欄に金額を入れるか、別途ご相談ください）</td></tr>';
   return '<div class="slip">'
     + '<h4>給与明細（見込み）</h4>'
     + '<div class="slip-sub">' + escapeHtml(office.code + '：' + office.name) + '</div>'
