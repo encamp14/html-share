@@ -66,6 +66,7 @@
 <div class="tabs">
   <div class="tab active" data-p="make">✉️ メールを作る</div>
   <div class="tab" data-p="season">🗓 季節メモを育てる</div>
+  <div class="tab" data-p="climate">🍂 季節の一文</div>
   <div class="tab" data-p="spots">🗺 おすすめ案内</div>
   <div class="tab" data-p="faq">💬 質問に返信</div>
   <div class="tab" data-p="pdca">📈 改善ログ（PDCA）</div>
@@ -151,6 +152,19 @@
     <button class="btn btn-main" onclick="saveSeason()">💾 季節メモを保存</button>
     <button class="btn btn-sub btn-small" onclick="clearSeasonInputs()">全部クリア</button>
     <span id="season-msg" class="note"></span>
+  </div>
+</div>
+
+<!-- ============ 季節の一文 ============ -->
+<div class="panel" id="p-climate">
+  <h2>🍂 季節の一文（気温のあとに続く、宿泊シーズンの一言）</h2>
+  <p class="note">メール3段落目の「お越しいただく○月○日は…最高気温○度」の<strong>あとに続く一文</strong>です。<strong>宿泊日</strong>の月×上旬（1～10日）・中旬（11～20日）・下旬（21日～）で自動的に選ばれます。デフォルトは<strong>柳さんの過去メール1436通</strong>から凝縮しています。気になる所は直接書き換えてください（このMacの中だけに保存）。</p>
+  <div class="okbox">🌱 例：9月中旬なら「テント周りで食べられるキノコが顔を出し始め、塩尻市内でさまざまなブドウ狩りを楽しめる時期です。」／ 空欄にすると、その枠は昔の簡易文（夏＝別天地・冬＝暖かい服装で）に戻ります。</div>
+  <table id="climate-table"></table>
+  <div class="toolbar">
+    <button class="btn btn-main" onclick="saveClimate()">💾 季節の一文を保存</button>
+    <button class="btn btn-sub btn-small" onclick="resetClimate()">柳さんの元の文に戻す</button>
+    <span id="climate-msg" class="note"></span>
   </div>
 </div>
 
@@ -281,10 +295,50 @@ let season = JSON.parse(localStorage.getItem("mk_season")||"null") || DEFAULT_SE
 // 旧形式(txt)を新形式(kami/naka/shimo)へ移行
 for(const m in season){ if(season[m] && season[m].txt!==undefined){ season[m]={kami:"",naka:season[m].txt||"",shimo:""}; } }
 // 3段落目（気温のあとに続く一文）＝「宿泊日」の月×上旬/中旬/下旬で出し分ける。
-// 中身は柳さんの実際の送信メールから。空の枠は従来の夏/冬の簡易文にフォールバック。
-const SEASON_CLIMATE = {
-  9:{ naka:"テント周りで食べられるキノコが顔を出し始め、塩尻市内ではさまざまな種類のブドウ狩りを楽しめる時期です。" }
+// デフォルトは柳さんの実際の送信メール（メール履歴一覧より1436通を解析）から凝縮。
+// 「🍂 季節の一文」タブで自分で書き換えられる（このMacに保存）。空の枠は従来の夏/冬簡易文にフォールバック。
+const DEFAULT_CLIMATE = {
+  1:{ kami:"厳冬期の凛と澄んだ空気の中、北アルプスは雪化粧をまとい、夜はテントを彩る電飾がロマンチックにきらめく時期です。",
+      naka:"一年で最も寒さがしみる頃ですが、その分だけ炎のあたたかさと澄みきった空気の心地よさが際立つ時期です。",
+      shimo:"寒さの峠は続きますが、日中は日差しがやわらぎ、雪化粧の穂高連峰がくっきりと望める時期です。" },
+  2:{ kami:"立春を過ぎても「春は名のみ」の凛とした寒さの中、炎のあたたかさと太陽のありがたさを実感できる時期です。",
+      naka:"日中は日差しがやわらかくなり、田のあぜにオオイヌノフグリなど野の花がちらほら咲き始める頃です。",
+      shimo:"日によっては四月中旬並みのぽかぽか陽気になることもあり、少しずつ春の気配が近づいてくる時期です。" },
+  3:{ kami:"朝はまだ冷えますが日中の日差しはやわらかく、野の花が咲き始めて春の訪れを感じられる時期です。",
+      naka:"「春は名のみ」の寒さも残りますが、野の花が咲きはじめ、いよいよ春の足音が聞こえてくる頃です。",
+      shimo:"みどり湖畔で水芭蕉の白い花が見頃を迎え、梅や野の花も咲いて春の訪れを実感できる時期です。" },
+  4:{ kami:"朝はまだ肌寒いものの、みどり湖畔に水芭蕉が顔を出し、残雪の穂高連峰も望める春めく時期です。",
+      naka:"松本城のお堀をはじめ、あたり一面がピンクに染まる桜満開の春爛漫の頃です。",
+      shimo:"松本平は桜が満開から散りはじめへと移ろい、場内の桜の古木も花を咲かせる春たけなわの時期です。" },
+  5:{ kami:"木々が新緑をまとい、水を張った田んぼに北アルプスが映る「水鏡」が見られる時期です（朝晩は少し肌寒いです）。",
+      naka:"さわやかな新緑に包まれて過ごしやすく、田んぼに映る北アルプスの山々が美しい時期です。",
+      shimo:"「薫風」の言葉どおり、緑に包まれ暑くも寒くもなく、一年で最も過ごしやすい時期です。" },
+  6:{ kami:"暑くも寒くもなく過ごしやすく、アジサイが見頃を迎え、蛍が舞いはじめる頃です。",
+      naka:"過ごしやすい陽気の中、近くの辰野町ではほたる祭りが開かれ、夜には蛍の乱舞が見られる時期です。",
+      shimo:"アジサイが見頃を迎え蛍が舞う頃で、ブドウとワインの里・塩尻ならではの初夏を感じられる時期です。" },
+  7:{ kami:"梅雨の時期ですが日照時間は日本一。日差しは強くても湿度が低く、日陰に入れば涼しさを感じられます。",
+      naka:"空気が澄んで日差しは強いものの湿度が低く、高原の夜は「別天地」のように涼しく感じられる時期です。",
+      shimo:"湿度が低くからっとした暑さで、日陰は涼しく、夜は驚くほど過ごしやすい高原の夏です。" },
+  8:{ kami:"一年で最も暑い頃ですが、湿度が低いので日陰は涼しく、標高830mの夜は別天地のように涼やかです。",
+      naka:"日差しは強くても湿度が低く、日陰はさわやか。夜は都会では味わえない涼しさに包まれる時期です。",
+      shimo:"厳しい暑さが少しずつやわらぎ、湿度の低いからっとした陽気と涼しい夜が心地よい時期です。" },
+  9:{ kami:"まだ残暑は残りますが、標高の高い高原の夜は別天地のように涼しく感じられる時期です。",
+      naka:"テント周りで食べられるキノコが顔を出し始め、塩尻市内ではさまざまな種類のブドウ狩りを楽しめる時期です。",
+      shimo:"テント周りに食べられるキノコがニョキニョキと顔を出しはじめる、実りの秋の入り口の時期です。" },
+  10:{ kami:"紅葉はまだ少し先ですが、場内にハナイグチなど食べられるキノコが顔を出す、秋の入り口の時期です。",
+      naka:"木の葉が色づきはじめ、テント周りに食べられるキノコが顔を出す、秋本番へと向かう時期です。",
+      shimo:"木々が色づき、テント周りのキノコやヤギとのふれあいも楽しめる、深まりゆく秋の時期です。" },
+  11:{ kami:"木々の紅葉が里に降りてくる晩秋で、澄んで凛とした空気の中に冬の気配が漂いはじめる時期です。",
+      naka:"霜月の澄んだ空気の中、高ボッチ高原からは諏訪湖の夜景と朝焼けの富士山の絶景が望める時期です。",
+      shimo:"朝晩はぐっと冷え込みますので暖かい服装が安心。北アルプスは雪化粧をはじめる初冬の時期です。" },
+  12:{ kami:"北アルプスが雪化粧をまとい、みどり湖の堰堤から冠雪した穂高連峰を望める、澄んだ冬晴れの時期です。",
+      naka:"紅葉も終わりを迎え、夜はテントを彩る電飾がロマンチックにきらめく、冬本番の時期です。",
+      shimo:"いよいよ冬将軍の到来。雪景色になれば電飾がいっそう幻想的に輝く、一年の締めくくりの時期です。" }
 };
+// 保存済みがあればそれを使う（自分で書き換えた内容を優先）。無ければデフォルト。
+let climate = JSON.parse(localStorage.getItem("mk_climate")||"null") || JSON.parse(JSON.stringify(DEFAULT_CLIMATE));
+// 足りない月×時期はデフォルトで補完（デフォルトを増やしたときのため）
+for(let m=1;m<=12;m++){ climate[m]=Object.assign({}, DEFAULT_CLIMATE[m], climate[m]||{}); }
 let logs = JSON.parse(localStorage.getItem("mk_logs")||"[]");
 // 日付ごとの平年気温の上書き（気象庁で確認した本物の数字だけ。キー=MMDD）
 let dateOverrides = JSON.parse(localStorage.getItem("mk_dateov")||"{}");
@@ -563,7 +617,7 @@ function generate(){
   let c="お越しいただく"+dispDate+"は平年だと松本で最高気温"+hiT+"度、最低気温"+loT+"度。"+heightSentence;
   // 宿泊日の 上旬(1-10)/中旬(11-20)/下旬(21-) を判定
   const stayPeriod = dd<=10?'kami':dd<=20?'naka':'shimo';
-  const climateLine = (SEASON_CLIMATE[mm] && SEASON_CLIMATE[mm][stayPeriod]) || "";
+  const climateLine = (climate[mm] && climate[mm][stayPeriod]) || "";
   if(climateLine){
     // その月×時期に専用の一文があればそれを使う（夏の暑さ・別天地の一文は出さない）
     c+=climateLine;
@@ -822,6 +876,40 @@ function clearSeasonInputs(){
   document.getElementById("season-msg").textContent="入力欄を空にしました（保存するまで確定しません）";
 }
 
+// ================= 季節の一文 =================
+function renderClimate(){
+  const tb=document.getElementById("climate-table");
+  let h="<tr><th style='width:56px'>月</th><th>気温のあとに続く一文（上旬・中旬・下旬）</th></tr>";
+  for(let m=1;m<=12;m++){
+    const s=climate[m]||{kami:"",naka:"",shimo:""};
+    let cells="";
+    PERIODS.forEach(([k,lbl])=>{
+      cells+=`<div style="font-size:.78rem;color:var(--green);margin-top:5px">${lbl}</div>
+      <textarea id="cl-${m}-${k}" placeholder="この時期の宿泊シーズンの一言">${esc(s[k])}</textarea>`;
+    });
+    h+=`<tr class="month-row"><td>${m}月</td><td>${cells}</td></tr>`;
+  }
+  tb.innerHTML=h;
+}
+function saveClimate(){
+  for(let m=1;m<=12;m++){
+    climate[m]={kami:document.getElementById("cl-"+m+"-kami").value.trim(),
+                naka:document.getElementById("cl-"+m+"-naka").value.trim(),
+                shimo:document.getElementById("cl-"+m+"-shimo").value.trim()};
+  }
+  localStorage.setItem("mk_climate",JSON.stringify(climate));
+  document.getElementById("climate-msg").textContent="✅ 保存しました（このMacの中だけ）";
+  setTimeout(()=>document.getElementById("climate-msg").textContent="",2500);
+}
+function resetClimate(){
+  if(!confirm("季節の一文を、柳さんの過去メールから作った元の文に戻しますか？\n（今の書き換えは消えます）"))return;
+  climate=JSON.parse(JSON.stringify(DEFAULT_CLIMATE));
+  localStorage.setItem("mk_climate",JSON.stringify(climate));
+  renderClimate();
+  document.getElementById("climate-msg").textContent="柳さんの元の文に戻しました";
+  setTimeout(()=>document.getElementById("climate-msg").textContent="",2500);
+}
+
 // ================= 改善ログ =================
 function renderLogs(){
   document.getElementById("log-list").innerHTML = logs.map((l,i)=>
@@ -838,7 +926,7 @@ function addLog(){
 }
 function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringify(logs));renderLogs();}
 
-renderSeason(); renderLogs(); renderSpots(); renderFaq();
+renderSeason(); renderClimate(); renderLogs(); renderSpots(); renderFaq();
 document.getElementById("output").addEventListener("input",updateCharCount);
 document.getElementById("spot-output").addEventListener("input",updateSpotCount);
 document.getElementById("faq-output").addEventListener("input",updateFaqCount);
