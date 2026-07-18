@@ -280,6 +280,11 @@ for(let m=1;m<=12;m++){DEFAULT_SEASON[m]={kami:"",naka:SEASON_SEED[m]||"",shimo:
 let season = JSON.parse(localStorage.getItem("mk_season")||"null") || DEFAULT_SEASON;
 // 旧形式(txt)を新形式(kami/naka/shimo)へ移行
 for(const m in season){ if(season[m] && season[m].txt!==undefined){ season[m]={kami:"",naka:season[m].txt||"",shimo:""}; } }
+// 3段落目（気温のあとに続く一文）＝「宿泊日」の月×上旬/中旬/下旬で出し分ける。
+// 中身は柳さんの実際の送信メールから。空の枠は従来の夏/冬の簡易文にフォールバック。
+const SEASON_CLIMATE = {
+  9:{ naka:"テント周りで食べられるキノコが顔を出し始め、塩尻市内ではさまざまな種類のブドウ狩りを楽しめる時期です。" }
+};
 let logs = JSON.parse(localStorage.getItem("mk_logs")||"[]");
 // 日付ごとの平年気温の上書き（気象庁で確認した本物の数字だけ。キー=MMDD）
 let dateOverrides = JSON.parse(localStorage.getItem("mk_dateov")||"{}");
@@ -556,13 +561,20 @@ function generate(){
   L.push(todayField ? todayField : (sNat ? sNat : "〔※今日の一文が空です。上の「今日の一文」に今日のenCampの様子を入れてください〕"));
   // 3 気候
   let c="お越しいただく"+dispDate+"は平年だと松本で最高気温"+hiT+"度、最低気温"+loT+"度。"+heightSentence;
-  if(mm>=9&&mm<=10){
-    // 秋（9〜10月）はぶどう狩りに差し替え（夏の暑さ・別天地の一文は出さない）
-    c+="塩尻市内ではぶどう狩りを楽しめます。";
+  // 宿泊日の 上旬(1-10)/中旬(11-20)/下旬(21-) を判定
+  const stayPeriod = dd<=10?'kami':dd<=20?'naka':'shimo';
+  const climateLine = (SEASON_CLIMATE[mm] && SEASON_CLIMATE[mm][stayPeriod]) || "";
+  if(climateLine){
+    // その月×時期に専用の一文があればそれを使う（夏の暑さ・別天地の一文は出さない）
+    c+=climateLine;
   } else {
-    if(mm>=6&&mm<=8) c+="空気が澄んでいるため日差しは強いですが、湿度が低いので日陰に入れば涼しくなります。";
-    else if(mm>=11||mm<=3) c+="朝晩は冷え込みますので、暖かい服装でお越しいただくと安心です。";
-    if(!isLocal&&from) c+=from+"から来られますと夜は別天地のように感じられると思います。";
+    // 専用文が未登録の枠は従来の簡易文でフォールバック
+    if(mm>=6&&mm<=8){
+      c+="空気が澄んでいるため日差しは強いですが、湿度が低いので日陰に入れば涼しくなります。";
+      if(!isLocal&&from) c+=from+"から来られますと夜は別天地のように感じられると思います。";
+    } else if(mm>=11||mm<=3){
+      c+="朝晩は冷え込みますので、暖かい服装でお越しいただくと安心です。";
+    }
   }
   L.push(c);
   // 4 夜（固定）※「エアコンの効いたテント」は夏（3〜8月）のみ。秋以降（9〜2月）は「快適なテント」。
