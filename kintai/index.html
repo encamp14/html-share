@@ -327,7 +327,11 @@
 <!-- ===== 管理画面 ===== -->
 <div class="modal" id="adminModal">
   <div class="box">
-    <h2>管理画面</h2>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <h2 style="border:none; margin:0;">管理画面</h2>
+      <button class="act-btn" onclick="pullState(true)" title="iPadなど他の端末で入力した最新のデータを取り込みます">🔄 最新を取り込む</button>
+    </div>
+    <p class="note" style="margin:2px 0 14px;">※ パソコンで確認・修正する前に「最新を取り込む」を押すと、iPadの打刻が反映されます。</p>
     <div class="tab-btns">
       <button id="tabbtn-emp" class="on" onclick="adminTab('emp')">スタッフ</button>
       <button id="tabbtn-fix" onclick="adminTab('fix')">勤怠の修正</button>
@@ -624,6 +628,7 @@ function syncDakoku() {
     }
   }
   pushSheet('打刻', ['日付','曜日','社員コード','氏名','区分','種類','出勤','退勤','外出1','戻り1','外出2','戻り2','勤務時間','事業所'], rows);
+  pushState();
 }
 function syncDay(date, code) { syncDakoku(); }  // 呼び出し互換（丸ごと更新）
 
@@ -636,6 +641,7 @@ function syncStaff() {
   const rows = [...employees].sort((a,b) => Number(a.code)-Number(b.code))
     .map(e => [e.code, e.name, e.kind || '', e.wage || '', e.wend || '', e.allow || '', e.join || '', e.leave || '']);
   pushSheet('スタッフ', ['社員コード','氏名','区分','時給','金土日時給','交通費','入社日','退社日'], rows);
+  pushState();
 }
 function syncSalesAll() {
   const rows = Object.keys(sales).sort().map(d => {
@@ -643,6 +649,7 @@ function syncSalesAll() {
     return [d, YOUBI[dd.getDay()], sales[d].amount, sales[d].memo || ''];
   });
   pushSheet('売上', ['日付','曜日','売上','メモ'], rows);
+  pushState();
 }
 function syncShiftAll() {
   const rows = [];
@@ -656,14 +663,17 @@ function syncShiftAll() {
     }
   }
   pushSheet('シフト', ['年月','社員コード','氏名','日','内容'], rows);
+  pushState();
 }
 function syncBoard() {
   pushSheet('掲示板', ['日時','タイトル','内容'], board.map(p => [p.time, p.title || '', p.body || '']));
+  pushState();
 }
 // 修正履歴（不正対策の記録）をスプレッドシートへ
 function syncFixLog() {
   const rows = fixLog.map(l => [l.time, l.type, l.date, l.code, l.name, l.before, l.after]);
   pushSheet('修正履歴', ['変更した日時','種類','対象の日','社員コード','氏名','変更前','変更後'], rows);
+  pushState();
 }
 function syncSummaryAll() {
   const months = [...new Set(Object.keys(records).map(k => k.slice(0,7)))].sort();
@@ -701,6 +711,44 @@ function syncDowAll() {
 function rebuildDash() {
   if (!syncUrl) return;
   setTimeout(() => sendToSheet({ type: 'dashboard' }), 1500); // データが入り終わってからグラフ更新
+}
+
+/* ===== PC・iPad共有（同じデータを見る） ===== */
+// この端末の全データを「共有データ」として送る（源泉）
+function pushState() {
+  if (!syncUrl) return;
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office });
+  sendToSheet({ type: 'state', blob });
+}
+// 共有データを取り込んで、この端末を最新にする
+function pullState(manual) {
+  if (!syncUrl) { if (manual) alert('連携先が設定されていません（設定タブ）'); return; }
+  const cbName = '__pullState_cb';
+  window[cbName] = function(obj) {
+    const s = document.getElementById('__pullScript'); if (s) s.remove();
+    if (obj && typeof obj === 'object') {
+      if (obj.employees) { employees = obj.employees; save(LS_EMP, employees); }
+      if (obj.records)   { records   = obj.records;   save(LS_REC, records); }
+      if (obj.shifts)    { shifts    = obj.shifts;    save(LS_SHIFT, shifts); }
+      if (obj.board)     { board     = obj.board;     save(LS_BOARD, board); }
+      if (obj.sales)     { sales     = obj.sales;     save(LS_SALES, sales); }
+      if (obj.fixLog)    { fixLog    = obj.fixLog;    save(LS_FIXLOG, fixLog); }
+      if (obj.office)    { office    = obj.office;    save(LS_OFF, office); renderOffice(); }
+      if (document.getElementById('adminModal').classList.contains('show')) {
+        renderEmpTable(); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
+        renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
+      }
+      if (manual) alert('最新のデータを取り込みました');
+    } else {
+      if (manual) alert('まだ共有データがありません（iPadで打刻や登録をすると作られます）');
+    }
+  };
+  const old = document.getElementById('__pullScript'); if (old) old.remove();
+  const sc = document.createElement('script');
+  sc.id = '__pullScript';
+  sc.src = syncUrl + '?action=pull&callback=' + cbName + '&t=' + new Date().getTime();
+  sc.onerror = function(){ if (manual) alert('取り込みに失敗しました（ネット接続を確認してください）'); };
+  document.body.appendChild(sc);
 }
 
 /* ================= 打刻画面 ================= */
@@ -1516,6 +1564,7 @@ function saveOffice() {
   office = {code, name};
   save(LS_OFF, office);
   renderOffice();
+  pushState();
   alert('保存しました');
 }
 
@@ -1593,6 +1642,11 @@ function restoreData(input) {
 document.getElementById('codeInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') showEmployee();
 });
+
+/* 起動時：この端末がまだ空なら、共有データ（他の端末で入れた分）を取り込む */
+if (syncUrl && employees.length === 0 && Object.keys(records).length === 0) {
+  pullState(false);
+}
 </script>
 </body>
 </html>
