@@ -107,7 +107,8 @@
           <label>ペット</label><input type="text" id="f-pet" placeholder="例：チワックス1頭（いなければ空欄）">
           <label>記念日プラン</label><input type="text" id="f-celeb" placeholder="飾り付け・シャンパンタワー等があれば「あり」">
           <label>送迎</label><input type="text" id="f-pickup" placeholder="あり／空欄（ありなら「安全運転で」を省く）">
-          <label>リピーター</label><input type="text" id="f-repeat" placeholder="あり／空欄（ありなら「はじめまして」を使わない）">
+          <label>リピーター</label><input type="text" id="f-repeat" placeholder="あり／空欄（ありなら「前回のご利用」を調べて入れる）">
+          <label>前回のご利用</label><input type="text" id="f-lastvisit" placeholder="例：2024年8月（過去メールで分かれば。冒頭にお礼の一文が入る／空欄可）">
           <label>要望・質問</label><input type="text" id="f-request" placeholder="あれば文末の「追伸」に回答欄が出ます">
           <label>プラン</label><input type="text" id="f-plan" placeholder="プラン名">
         </div>
@@ -500,7 +501,7 @@ function parseMail(){
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
   if(window.isIkyu) w.push("📮 一休の予約です。返信は<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
   if(hasPickup(t)) w.push("🚐 送迎ありの予約です。文末の「遠路となりますので…安全運転で」の一文は省きます。");
-  if(isRepeat) w.push("🔁 リピーターのお客様です（過去に宿泊）。挨拶を「いつもありがとうございます」にします。");
+  if(isRepeat) w.push("🔁 リピーターのお客様です（過去に宿泊）。過去の予約メールで前回のご利用時期を調べ、「前回のご利用」欄に入れると、冒頭にお礼の一文が入ります。");
   // お客様の要望・質問の拾い上げ（→ 文末の「追伸」に回答欄を用意）
   // 要望の抽出：▼セクションや区切り線・料金の手前まで（複数行OK）
   let reqTxt=(()=>{
@@ -598,13 +599,13 @@ function generate(){
   } else {
     party = dispDate+"泊"+total+"名様"+(people?"（"+people+"）":"");
   }
-  const repeat=/あり|リピート|過去/.test(gV("f-repeat"));
-  let g;
-  if(repeat){
-    g=name+"様\n\nいつもenCampをご利用いただき、誠にありがとうございます。カウボーイハットがトレードマークのスタッフ・柳です。この度も"+party+"でのご予約、重ねてありがとうございます。またお会いできることを、スタッフ一同心より楽しみにしております（＾＾）";
-  } else {
-    g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのenCampスタッフ・柳と申します。この度は"+party+"でご予約をいただきありがとうございます。爽やかな信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より歓迎致します（＾＾）";
+  // 冒頭は初見もリピーターも共通の入り方。前回のご利用が分かればお礼の一文を差し込む。
+  const lastVisit=gV("f-lastvisit").trim();
+  let g=name+"様\n\nはじめまして。カウボーイハットがトレードマークのスタッフ・柳と申します。この度は"+party+"でご予約いただきありがとうございます。";
+  if(lastVisit){
+    g+=lastVisit+"以来のご利用となりますでしょうか。リピート利用いただけることくらい嬉しいことはありません。";
   }
+  g+="信州で過ごす"+(seasonWord?seasonWord+"の":"")+"大切な思い出になりますよう、スタッフ一同心より楽しみにしております（＾＾）";
   L.push(g);
   // 2 季節：柳さんが毎朝入れる「今日の一文」が最優先。無ければ、送る日の上旬/中旬/下旬の季節メモ。
   const now=new Date(), sendM=now.getMonth()+1, sendD=now.getDate();
@@ -641,11 +642,12 @@ function generate(){
   // 7 コンシェルジュ（固定）
   L.push("私たちは当地方のコンシェルジュでもありますので、何かあればいろいろ聞いてください。ちなみに私は前職で長年この地方の新聞記者をしておりました。");
   // 8 結び
-  let closer="それでは、スタッフ一同お会いできるのを楽しみにしております（＾＾）";
+  // 冒頭で「スタッフ一同心より楽しみにしております」を述べるので、結びは重複を避け安全案内を主に。
   const pickup=/あり|要|希望/.test(gV("f-pickup"));
-  if(pickup){ /* 送迎あり＝「安全運転で」の一文は入れない */ }
-  else if(isLocal) closer+="お気をつけてお越しください。";
-  else closer+="遠路となりますので休憩を取りながら安全運転でお越しください。";
+  let closer;
+  if(pickup) closer="それでは、当日お会いできますのを心待ちにしております（＾＾）";        // 送迎あり＝「安全運転で」は省く
+  else if(isLocal) closer="それでは、お気をつけてお越しください。当日お待ちしております（＾＾）";
+  else closer="それでは、遠路となりますので、休憩を取りながら安全運転でお越しください。当日お待ちしております（＾＾）";
   L.push(closer);
   // 追伸：記念日プラン（本文には入れず、追伸で簡潔にお祝い内容をおたずねする）
   if(gV("f-celeb")) L.push("追伸）記念日プランをお選びいただき、ありがとうございます。飾り付けに反映致しますので、どなたの・どのような記念日か（お誕生日／ご結婚記念日など）、お祝いされる方の年齢・性別をお教えください。");
@@ -836,7 +838,7 @@ function saveOverride(){
   document.getElementById("ov-msg").textContent="✅ "+window.curMonth+"月"+window.curDay+"日を記憶しました。次からこの日は自動で入ります。";
 }
 function clearAll(){
-  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-pickup","f-repeat","f-request","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
+  ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-pickup","f-repeat","f-lastvisit","f-request","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
   document.getElementById("warnings").innerHTML="";
   document.getElementById("sendinfo").style.display="none";
   document.getElementById("tempbox").style.display="none";
