@@ -386,6 +386,7 @@
         </select>
         <input type="tel" id="empWage" placeholder="時給（円）" style="width:110px">
         <input type="tel" id="empWend" placeholder="金土日の時給" style="width:130px">
+        <input type="tel" id="empSalary" placeholder="月給（日給月給の人）" style="width:170px">
         <input type="tel" id="empAllow" placeholder="交通費（円/日）" style="width:130px">
         <label style="font-size:14px;color:#555">入社日</label>
         <input type="date" id="empJoin" style="width:145px">
@@ -579,6 +580,8 @@
         <input type="text" id="offName" placeholder="事業所名" style="width:220px">
         <label style="font-size:14px;color:#555">日付切替時刻</label>
         <input type="time" id="offCut" value="00:00" style="width:110px">
+        <label style="font-size:14px;color:#555">担当者名</label>
+        <input type="text" id="offEditor" placeholder="修正する人の名前" style="width:150px">
         <button onclick="saveOffice()">保存する</button>
       </div>
       <p class="note" style="margin-top:2px;">※ 日付切替時刻：深夜まで営業する場合、この時刻より前の打刻を「前日の勤務」にします（ふつうは 00:00）。事業場マスタに時刻があればそちらが優先されます。</p>
@@ -664,7 +667,7 @@ const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMat
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
 
 // 旧データ（時給なし）を新形式にそろえる
-employees = employees.map(e => ({kind:'正社員', salKind:'時給', dept:'', site:'', rule:'通常', status:'在籍', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
+employees = employees.map(e => ({kind:'正社員', salKind:'時給', dept:'', site:'', rule:'通常', status:'在籍', wage:'', wend:'', salary:'', allow:'', join:'', leave:'', ...e}));
 
 const FIELDS = ['in','out','go1','bk1','go2','bk2'];
 const FIELD_NAMES = {in:'出勤', out:'退勤', go1:'外出１', bk1:'戻り１', go2:'外出２', bk2:'戻り２'};
@@ -743,8 +746,8 @@ function pushSheet(name, headers, rows) {
 function syncStaff() {
   const rows = [...employees].sort((a,b) => Number(a.code)-Number(b.code))
     .map(e => [e.code, e.name, e.kind || '', e.salKind || '', e.dept || '', e.site || '',
-      e.rule || '', e.status || '在籍', e.join || '', e.leave || '', e.wage || '', e.wend || '', e.allow || '']);
-  pushSheet('スタッフ', ['社員コード','氏名','雇用区分','給与区分','所属部門','所属事業場','勤務制度','在籍状態','入社日','退社日','時給','金土日時給','交通費'], rows);
+      e.rule || '', e.status || '在籍', e.join || '', e.leave || '', e.wage || '', e.wend || '', e.salary || '', e.allow || '']);
+  pushSheet('スタッフ', ['社員コード','氏名','雇用区分','給与区分','所属部門','所属事業場','勤務制度','在籍状態','入社日','退社日','時給','金土日時給','月給','交通費'], rows);
   pushState();
 }
 function syncTerm() {
@@ -787,8 +790,8 @@ function syncBoard() {
 }
 // 修正履歴（不正対策の記録）をスプレッドシートへ
 function syncFixLog() {
-  const rows = fixLog.map(l => [l.time, l.type, l.date, l.code, l.name, l.before, l.after]);
-  pushSheet('修正履歴', ['変更した日時','種類','対象の日','社員コード','氏名','変更前','変更後'], rows);
+  const rows = fixLog.map(l => [l.time, l.type, l.date, l.code, l.name, l.before, l.after, l.editor || '', l.reason || '']);
+  pushSheet('修正履歴', ['変更した日時','種類','対象の日','社員コード','氏名','変更前','変更後','修正者','修正理由'], rows);
   pushState();
 }
 function syncSummaryAll() {
@@ -1220,6 +1223,8 @@ function monthTotals(ym) {
       if (!per[code]) per[code] = {
         name: emp ? emp.name : '(削除済み)',
         kind: emp ? emp.kind : '',
+        salKind: emp ? (emp.salKind || '時給') : '時給',
+        salary: emp && emp.salary ? Number(emp.salary) : 0,   // 月給（日給月給の人）
         wage: emp && emp.wage ? Number(emp.wage) : 0,
         wend: emp && emp.wend ? Number(emp.wend) : 0,   // 金土日の時給（未設定なら通常時給）
         allow: emp && emp.allow ? Number(emp.allow) : 0,
@@ -1240,11 +1245,18 @@ function monthTotals(ym) {
   for (const code of Object.keys(per)) {
     const p = per[code];
     const wendWage = p.wend || p.wage;                 // 金土日時給が空なら通常時給
-    if (p.wage) {
+    const cm = commuteTotal(code, ym, p.days);
+    if (p.salKind === '日給月給' && p.salary) {
+      // 日給月給：月給まるごと（欠勤控除は今は無し）
+      p.baseWeek = null; p.baseWend = null; p.wendPlus = 0;
+      p.base = p.salary;
+      p.allowTotal = (cm !== null) ? cm : (p.allow * p.days);
+      p.pay = p.base + p.allowTotal;
+      p.monthly = true;
+    } else if (p.wage) {
       p.baseWeek = Math.floor(p.weekMin * p.wage / 60);      // 平日の時給分
       p.baseWend = Math.floor(p.wendMin * wendWage / 60);    // 金土日の時給分
       p.base = p.baseWeek + p.baseWend;                      // 時給分の合計
-      const cm = commuteTotal(code, ym, p.days);             // 交通費マスタ優先
       p.allowTotal = (cm !== null) ? cm : (p.allow * p.days); // マスタが無ければスタッフ欄の交通費
       p.pay = p.base + p.allowTotal;                         // 合計見込み
       p.wendPlus = p.wend ? Math.floor(p.wendMin * (p.wend - p.wage) / 60) : 0; // 週末時給アップで増える額
@@ -1278,6 +1290,7 @@ function openAdmin() {
   document.getElementById('offCode').value = office.code;
   document.getElementById('offName').value = office.name;
   document.getElementById('offCut').value = office.cut || '00:00';
+  document.getElementById('offEditor').value = office.editor || '';
   document.getElementById('syncUrlInput').value = syncUrl;
   updateSyncStatus();
   renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
@@ -1544,16 +1557,17 @@ function addEmployee() {
   const status = document.getElementById('empStatus').value;
   const wage = normalizeCode(document.getElementById('empWage').value);
   const wend = normalizeCode(document.getElementById('empWend').value);
+  const salary = normalizeCode(document.getElementById('empSalary').value);
   const allow = normalizeCode(document.getElementById('empAllow').value);
   const join = document.getElementById('empJoin').value;
   const leave = document.getElementById('empLeave').value;
   if (!code || !name) { alert('社員コードと氏名を両方入れてください'); return; }
   const exist = findEmp(code);
-  const rec = {name, kind, salKind, dept, site, rule, status, wage, wend, allow, join, leave};
+  const rec = {name, kind, salKind, dept, site, rule, status, wage, wend, salary, allow, join, leave};
   if (exist) Object.assign(exist, rec);
   else employees.push({code, ...rec});
   save(LS_EMP, employees);
-  ['empCode','empName','empWage','empWend','empAllow','empJoin','empLeave'].forEach(id => document.getElementById(id).value = '');
+  ['empCode','empName','empWage','empWend','empSalary','empAllow','empJoin','empLeave'].forEach(id => document.getElementById(id).value = '');
   renderEmpTable();
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
   syncStaff();
@@ -1572,6 +1586,7 @@ function editEmployee(code) {
   document.getElementById('empStatus').value = e.status || '在籍';
   document.getElementById('empWage').value = e.wage || '';
   document.getElementById('empWend').value = e.wend || '';
+  document.getElementById('empSalary').value = e.salary || '';
   document.getElementById('empAllow').value = e.allow || '';
   document.getElementById('empJoin').value = e.join || '';
   document.getElementById('empLeave').value = e.leave || '';
@@ -1620,16 +1635,18 @@ function renderFixLog() {
   const tbl = document.getElementById('fixLogTable');
   if (!tbl) return;
   const color = { '追加':'#0a7a2f', '修正':'#c07a00', '取消':'#c00' };
-  let html = '<tr><th style="width:130px">変更した日時</th><th style="width:60px">種類</th><th style="width:90px">対象の日</th><th>氏名</th><th>変更前</th><th>変更後</th></tr>';
+  let html = '<tr><th style="width:130px">変更した日時</th><th style="width:60px">種類</th><th style="width:90px">対象の日</th><th>氏名</th><th>変更前</th><th>変更後</th><th style="width:90px">修正者</th><th>理由</th></tr>';
   for (const l of fixLog.slice(0, 100)) {
     html += '<tr><td>' + escapeHtml(l.time) + '</td>'
       + '<td style="font-weight:bold;color:' + (color[l.type]||'#333') + '">' + escapeHtml(l.type) + '</td>'
       + '<td>' + escapeHtml(l.date) + '</td>'
       + '<td class="name">' + escapeHtml(l.name) + '</td>'
       + '<td style="color:#888">' + escapeHtml(l.before) + '</td>'
-      + '<td><b>' + escapeHtml(l.after) + '</b></td></tr>';
+      + '<td><b>' + escapeHtml(l.after) + '</b></td>'
+      + '<td>' + escapeHtml(l.editor || '') + '</td>'
+      + '<td>' + escapeHtml(l.reason || '') + '</td></tr>';
   }
-  if (!fixLog.length) html += '<tr><td colspan="6">まだ修正の記録はありません。</td></tr>';
+  if (!fixLog.length) html += '<tr><td colspan="8">まだ修正の記録はありません。</td></tr>';
   tbl.innerHTML = html;
 }
 
@@ -1670,6 +1687,9 @@ function saveFix() {
   if (confirms[ym] && !confirm('⚠️ ' + ym + ' は「確定済み」の月です。\n修正すると確定した内容が変わります。本当に修正しますか？')) return;
   const emp = findEmp(code);
   const empName = emp ? emp.name : '(削除済み)';
+  const editor = office.editor || '管理者';   // 修正した人（設定の担当者名）
+  let reason = '';                            // 修正の理由（最初の変更時に1回だけ聞く）
+  let askedReason = false;
   const n = daysInMonth(ym);
   const changes = []; let fxSeq = 0;
   for (let d = 1; d <= n; d++) {
@@ -1696,8 +1716,9 @@ function saveFix() {
       mk(newRec.go2, '休憩開始'); mk(newRec.bk2, '休憩終了'); mk(newRec.out, '退勤');
     }
 
+    if (!askedReason) { reason = prompt('修正の理由を入力してください（例：本人の打ち忘れ）', '') || ''; askedReason = true; }
     changes.push({ time: nowStamp(), date: key, code, name: empName, type,
-      before: recStr(oldRec), after: recStr(newRec) });
+      before: recStr(oldRec), after: recStr(newRec), editor, reason });
   }
   punchEvents.sort((a, b) => a.dt - b.dt);
   save(LS_EVENTS, punchEvents);
@@ -1834,14 +1855,24 @@ function buildSlipHTML(ym, code) {
   const emp = findEmp(code);
   if (!per || !emp) return null;
   const [y,m] = ym.split('-');
-  const basePlain = per.base - per.wendPlus;   // 全時間を通常時給で計算した基本給
-  const wageRows = per.wage
-    ? '<tr><th>基本給（勤務 ' + fmtMin(per.work) + ' × 時給 ' + yen(per.wage) + '）</th><td>' + yen(basePlain) + '</td></tr>'
+  let wageRows;
+  if (per.monthly) {
+    // 日給月給（月給まるごと）
+    wageRows = '<tr><th>基本給（月給・日給月給）</th><td>' + yen(per.base) + '</td></tr>'
+      + '<tr><th>残業手当</th><td style="color:#999">未設定（ルール決定後に計算）</td></tr>'
+      + '<tr><th>交通費</th><td>' + yen(per.allowTotal) + '</td></tr>'
+      + '<tr class="total"><th>支給見込み 合計</th><td>' + yen(per.pay) + '</td></tr>'
+      + '<tr><td colspan="2" style="font-size:12px;color:#888">※ 欠勤による控除は含んでいません（ルールが決まれば追加します）</td></tr>';
+  } else if (per.wage) {
+    const basePlain = per.base - per.wendPlus;   // 全時間を通常時給で計算した基本給
+    wageRows = '<tr><th>基本給（勤務 ' + fmtMin(per.work) + ' × 時給 ' + yen(per.wage) + '）</th><td>' + yen(basePlain) + '</td></tr>'
       + (per.wendPlus ? '<tr><th>金土日アップ（週末時給 ' + yen(per.wend) + '・' + fmtMin(per.wendMin) + '分）</th><td>+' + yen(per.wendPlus) + '</td></tr>' : '')
       + '<tr><th>残業手当</th><td style="color:#999">未設定（ルール決定後に計算）</td></tr>'
       + '<tr><th>交通費（' + yen(per.allow) + ' × ' + per.days + '日）</th><td>' + yen(per.allowTotal) + '</td></tr>'
-      + '<tr class="total"><th>支給見込み 合計</th><td>' + yen(per.pay) + '</td></tr>'
-    : '<tr><td colspan="2" style="text-align:center">時給が未登録のため金額は計算していません（月給の方は時給欄に金額を入れるか、別途ご相談ください）</td></tr>';
+      + '<tr class="total"><th>支給見込み 合計</th><td>' + yen(per.pay) + '</td></tr>';
+  } else {
+    wageRows = '<tr><td colspan="2" style="text-align:center">時給も月給も未登録のため金額は計算していません（スタッフ欄で時給か月給を入れてください）</td></tr>';
+  }
   return '<div class="slip">'
     + '<h4>給与明細（見込み）</h4>'
     + '<div class="slip-sub">' + escapeHtml(office.code + '：' + office.name) + '</div>'
@@ -2047,7 +2078,8 @@ function saveOffice() {
   const code = normalizeCode(document.getElementById('offCode').value) || '999';
   const name = document.getElementById('offName').value.trim() || '本部';
   const cut = document.getElementById('offCut').value || '00:00';
-  office = {code, name, cut};
+  const editor = document.getElementById('offEditor').value.trim();
+  office = {code, name, cut, editor};
   save(LS_OFF, office);
   renderOffice();
   pushState();
@@ -2107,7 +2139,7 @@ function restoreData(input) {
       const data = JSON.parse(reader.result);
       if (!data.employees || !data.records) throw new Error('形式が違います');
       if (!confirm('今のデータをバックアップの内容（' + (data.saved || '日時不明') + ' 保存分）で置き換えます。よろしいですか？')) return;
-      employees = data.employees.map(e => ({kind:'正社員', salKind:'時給', dept:'', site:'', rule:'通常', status:'在籍', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
+      employees = data.employees.map(e => ({kind:'正社員', salKind:'時給', dept:'', site:'', rule:'通常', status:'在籍', wage:'', wend:'', salary:'', allow:'', join:'', leave:'', ...e}));
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
       fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
