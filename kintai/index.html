@@ -97,7 +97,22 @@
     background:#f7f3ac; border:1px solid #999; color:#222;
     box-shadow:0 3px 0 #b9b47a; border-radius:2px;
   }
-  .btn-punch:active { transform:translateY(2px); box-shadow:none; }
+  .btn-punch:active:not(:disabled) { transform:translateY(2px); box-shadow:none; }
+  .btn-punch.b-in  { background:#c8e6c9; box-shadow:0 3px 0 #93bf95; }
+  .btn-punch.b-out { background:#ffccbc; box-shadow:0 3px 0 #cf9482; }
+  .btn-punch.b-bs  { background:#fff59d; box-shadow:0 3px 0 #c8bf5f; }
+  .btn-punch.b-be  { background:#b3e5fc; box-shadow:0 3px 0 #7fb3ca; }
+  .btn-punch:disabled { background:#e8e8e8 !important; color:#c0c0c0; box-shadow:none !important; border-color:#ddd; }
+  /* 現在の勤務状態バー */
+  .statebar { display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #888;
+    border-radius:4px; padding:12px 18px; flex-wrap:wrap; }
+  .sb-cap { font-size:18px; color:#555; white-space:nowrap; }
+  .sb-badge { font-size:28px; font-weight:bold; padding:6px 26px; border-radius:8px; letter-spacing:2px; }
+  .st-none { background:#eee; color:#999; }
+  .st-work { background:#e3f4e3; color:#188038; }
+  .st-break{ background:#fff3dc; color:#b3760a; }
+  .st-out  { background:#eef0fb; color:#5b5ea6; }
+  .sb-today { font-size:15px; color:#666; }
   .btn-gray {
     display:block; width:100%; padding:16px 0; font-size:22px; letter-spacing:6px;
     background:#e8e8e8; border:1px solid #888; color:#222;
@@ -247,17 +262,11 @@
 <!-- ===== 打刻画面 ===== -->
 <div class="office" id="officeLabel">999：本部</div>
 
-<table class="status">
-  <tr>
-    <th rowspan="2" class="label" style="width:12%">打刻状況</th>
-    <th>出勤</th><th>退勤</th><th>外出１</th><th>戻り１</th><th>外出２</th><th>戻り２</th>
-  </tr>
-  <tr>
-    <td id="st_in"></td><td id="st_out"></td>
-    <td id="st_go1"></td><td id="st_bk1"></td>
-    <td id="st_go2"></td><td id="st_bk2"></td>
-  </tr>
-</table>
+<div class="statebar">
+  <span class="sb-cap">現在の状態</span>
+  <span class="sb-badge st-none" id="stateBadge">－</span>
+  <span class="sb-today" id="stateToday"></span>
+</div>
 
 <div class="main">
   <div class="left">
@@ -274,10 +283,10 @@
     <div class="msg" id="msg"></div>
   </div>
   <div class="right">
-    <button class="btn-punch" onclick="punch('in')">出　勤</button>
-    <button class="btn-punch" onclick="punch('out')">退　勤</button>
-    <button class="btn-punch" onclick="punch('go')">外　出</button>
-    <button class="btn-punch" onclick="punch('bk')">戻　り</button>
+    <button class="btn-punch b-in"  id="btnIn"  onclick="punch('出勤')">出　勤</button>
+    <button class="btn-punch b-out" id="btnOut" onclick="punch('退勤')">退　勤</button>
+    <button class="btn-punch b-bs"  id="btnBS"  onclick="punch('休憩開始')">休憩開始</button>
+    <button class="btn-punch b-be"  id="btnBE"  onclick="punch('休憩終了')">休憩終了</button>
     <div class="spacer"></div>
     <button class="btn-gray" onclick="confirmMonth()">確　認</button>
     <button class="btn-gray" onclick="resetScreen()">終　了</button>
@@ -569,6 +578,8 @@ const LS_SYNC = 'kintai_syncurl';
 const LS_FIXLOG = 'kintai_fixlog';
 const LS_DEPT = 'kintai_depts';   // 部門マスタ
 const LS_SITE = 'kintai_sites';   // 事業場マスタ
+const LS_EVENTS = 'kintai_events';    // 打刻トラン（1打刻1行）
+const LS_MIGRATED = 'kintai_migrated_ev';
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -585,6 +596,7 @@ let pin       = load(LS_PIN, '9999');
 let fixLog    = load(LS_FIXLOG, []); // 修正履歴 [{time,date,code,name,type,before,after}]
 let depts     = load(LS_DEPT, []);  // 部門マスタ [{code, name}]
 let sites     = load(LS_SITE, []);  // 事業場マスタ [{code, name, dept, addr, cut, active}]
+let punchEvents = load(LS_EVENTS, []); // 打刻トラン [{id,code,name,type,dt,dateTimeStr,workDate,site,terminal,t}]
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMatfVBe8AzS0eMY2hZDruCdsME63hHVuX-O49FuyLptwk2MOpla7kNGbtg/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
@@ -651,18 +663,12 @@ function dayPayload(date, code) {
     office: office.code + '：' + office.name
   };
 }
-// 打刻シートを「種類」列つきで丸ごと最新にする
+// 打刻シート＝打刻トラン（1打刻1行）をそのまま送る
 function syncDakoku() {
   if (!syncUrl) return;
-  const rows = [];
-  for (const date of Object.keys(records).sort()) {
-    for (const code of Object.keys(records[date]).sort((a,b) => Number(a)-Number(b))) {
-      const p = dayPayload(date, code);
-      rows.push([p.date, p.youbi, p.code, p.name, p.kind, p.type,
-        p.in, p.out, p.go1, p.bk1, p.go2, p.bk2, p.work, p.office]);
-    }
-  }
-  pushSheet('打刻', ['日付','曜日','社員コード','氏名','区分','種類','出勤','退勤','外出1','戻り1','外出2','戻り2','勤務時間','事業所'], rows);
+  const rows = [...punchEvents].sort((a, b) => a.dt - b.dt).map(e =>
+    [e.id, e.workDate, e.dateTimeStr, e.code, e.name, e.type, e.site || '', e.t || '打刻', e.terminal || '']);
+  pushSheet('打刻', ['打刻ID','勤務日付','打刻日時','社員コード','氏名','打刻種別','事業場','種類','端末'], rows);
   pushState();
 }
 function syncDay(date, code) { syncDakoku(); }  // 呼び出し互換（丸ごと更新）
@@ -752,7 +758,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -771,6 +777,8 @@ function pullState(manual) {
       if (obj.office)    { office    = obj.office;    save(LS_OFF, office); renderOffice(); }
       if (obj.depts)     { depts     = obj.depts;     save(LS_DEPT, depts); }
       if (obj.sites)     { sites     = obj.sites;     save(LS_SITE, sites); }
+      if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
+      renderStatus(currentCode);
       if (document.getElementById('adminModal').classList.contains('show')) {
         renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept');
         fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
@@ -808,14 +816,107 @@ function setMsg(text, ok) {
   m.className = 'msg ' + (ok ? 'ok' : 'ng');
 }
 
+/* ===== 打刻トラン（1打刻1行）の中心ロジック ===== */
+function officeCut() { return (office.cut || '00:00'); }
+function workDateOf(d) {
+  const [ch, cm] = officeCut().split(':').map(Number);
+  const cutMin = ch * 60 + cm;
+  const nowMin = d.getHours() * 60 + d.getMinutes();
+  const base = new Date(d);
+  if (nowMin < cutMin) base.setDate(base.getDate() - 1); // 切替時刻より前は前日の勤務
+  return base.getFullYear() + '-' + pad(base.getMonth() + 1) + '-' + pad(base.getDate());
+}
+function eventsOf(code, wd) {
+  return punchEvents.filter(e => e.code === code && e.workDate === wd).sort((a, b) => a.dt - b.dt);
+}
+function stateOf(code, wd) {
+  let st = '未出勤';
+  for (const e of eventsOf(code, wd)) {
+    if (e.type === '出勤') st = '勤務中';
+    else if (e.type === '退勤') st = '退勤済';
+    else if (e.type === '休憩開始') st = '休憩中';
+    else if (e.type === '休憩終了') st = '勤務中';
+  }
+  return st;
+}
+// イベントから勤務時間(ミリ秒)を計算（中抜け・複数休憩に対応）
+function calcWorkedFromEvents(ev) {
+  let total = 0, open = null, breakSum = 0, bOpen = null;
+  for (const e of ev) {
+    if (e.type === '出勤') { open = e.dt; breakSum = 0; bOpen = null; }
+    else if (e.type === '休憩開始') { if (open !== null && bOpen === null) bOpen = e.dt; }
+    else if (e.type === '休憩終了') { if (bOpen !== null) { breakSum += (e.dt - bOpen); bOpen = null; } }
+    else if (e.type === '退勤') { if (open !== null) { total += (e.dt - open) - breakSum; open = null; breakSum = 0; } }
+  }
+  return total;
+}
+// 打刻トラン → 日次の勤務記録(records)を作り直す（給与・集計はこれを見る）
+function rebuildRecords() {
+  const R = {}, byKey = {};
+  for (const e of punchEvents) {
+    const k = e.workDate + '|' + e.code;
+    (byKey[k] = byKey[k] || []).push(e);
+  }
+  for (const k of Object.keys(byKey)) {
+    const idx = k.indexOf('|'); const wd = k.slice(0, idx), code = k.slice(idx + 1);
+    const ev = byKey[k].sort((a, b) => a.dt - b.dt);
+    const ins = ev.filter(e => e.type === '出勤'), outs = ev.filter(e => e.type === '退勤');
+    const edited = ev.some(e => e.t && e.t !== '打刻');
+    if (!R[wd]) R[wd] = {};
+    R[wd][code] = {
+      worked: Math.max(0, Math.round(calcWorkedFromEvents(ev) / 60000)),
+      in: ins.length ? ins[0].dateTimeStr.slice(11, 16) : '',
+      out: outs.length ? outs[outs.length - 1].dateTimeStr.slice(11, 16) : '',
+      t: edited ? '変更' : '打刻',
+      _ev: true
+    };
+  }
+  records = R;
+  save(LS_REC, records);
+}
+// 旧データ（1日1行）を打刻トランに1回だけ移す
+function migrateRecordsToEvents() {
+  if (load(LS_MIGRATED, false)) return;
+  if (punchEvents.length === 0 && Object.keys(records).length > 0) {
+    let seq = 0;
+    for (const day of Object.keys(records)) {
+      for (const code of Object.keys(records[day])) {
+        const rec = records[day][code]; const emp = findEmp(code); const nm = emp ? emp.name : '';
+        const mk = (hm, type) => {
+          if (!hm) return; const [h, m] = hm.split(':').map(Number);
+          const dObj = new Date(day + 'T00:00:00'); dObj.setHours(h, m, 0, 0);
+          punchEvents.push({ id: 'MG' + dObj.getTime() + (seq++), code, name: nm, type,
+            dt: dObj.getTime(), dateTimeStr: day + ' ' + pad(h) + ':' + pad(m) + ':00',
+            workDate: day, site: office.code || '', terminal: '', t: rec.t || '打刻' });
+        };
+        mk(rec.in, '出勤'); mk(rec.go1, '休憩開始'); mk(rec.bk1, '休憩終了');
+        mk(rec.go2, '休憩開始'); mk(rec.bk2, '休憩終了'); mk(rec.out, '退勤');
+      }
+    }
+    punchEvents.sort((a, b) => a.dt - b.dt);
+    save(LS_EVENTS, punchEvents);
+  }
+  save(LS_MIGRATED, true);
+}
+
 function renderStatus(code) {
-  const rec = (records[todayKey()] || {})[code] || {};
-  document.getElementById('st_in').textContent  = rec.in  || '';
-  document.getElementById('st_out').textContent = rec.out || '';
-  document.getElementById('st_go1').textContent = rec.go1 || '';
-  document.getElementById('st_bk1').textContent = rec.bk1 || '';
-  document.getElementById('st_go2').textContent = rec.go2 || '';
-  document.getElementById('st_bk2').textContent = rec.bk2 || '';
+  const badge = document.getElementById('stateBadge');
+  const today = document.getElementById('stateToday');
+  const en = (id, ok) => { const b = document.getElementById(id); if (b) b.disabled = !ok; };
+  if (!code) {
+    badge.textContent = '－'; badge.className = 'sb-badge st-none'; today.textContent = '';
+    en('btnIn', false); en('btnOut', false); en('btnBS', false); en('btnBE', false); return;
+  }
+  const wd = workDateOf(new Date());
+  const st = stateOf(code, wd);
+  badge.textContent = st;
+  badge.className = 'sb-badge ' + (st === '勤務中' ? 'st-work' : st === '休憩中' ? 'st-break' : st === '退勤済' ? 'st-out' : 'st-none');
+  const ev = eventsOf(code, wd);
+  today.textContent = ev.length ? ('本日：' + ev.map(e => e.type + ' ' + e.dateTimeStr.slice(11, 16)).join('　')) : '本日の打刻はまだありません';
+  en('btnIn', st === '未出勤' || st === '退勤済');   // 出勤（中抜けの再開も）
+  en('btnOut', st === '勤務中');                     // 退勤
+  en('btnBS', st === '勤務中');                      // 休憩開始
+  en('btnBE', st === '休憩中');                      // 休憩終了
 }
 
 function showEmployee() {
@@ -835,53 +936,36 @@ function normalizeCode(v) {
   return (v || '').trim().replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 }
 
-function punch(kind) {
+function punch(type) {
   const code = currentCode || normalizeCode(document.getElementById('codeInput').value);
-  if (!code) { setMsg('先に社員コードを入れてください', false); return; }
+  if (!code) { setMsg('先に名前をえらぶか、社員コードを入れてください', false); return; }
   const emp = findEmp(code);
   if (!emp) { setMsg('コード「' + code + '」は登録されていません', false); return; }
-
   if (code !== currentCode) {
     currentCode = code;
     document.getElementById('dispCode').textContent = code;
     document.getElementById('dispName').textContent = emp.name;
   }
-
-  const day = todayKey();
-  if (!records[day]) records[day] = {};
-  if (!records[day][code]) records[day][code] = {};
-  const rec = records[day][code];
-  const t = nowHM();
-  let done = null;
-
-  if (kind === 'in') {
-    if (rec.in) { setMsg('本日はすでに ' + rec.in + ' に出勤済みです', false); renderStatus(code); return; }
-    rec.in = t; done = '出勤';
+  const now = new Date();
+  const wd = workDateOf(now);
+  const st = stateOf(code, wd);
+  const okMap = { '出勤': (st === '未出勤' || st === '退勤済'), '退勤': st === '勤務中', '休憩開始': st === '勤務中', '休憩終了': st === '休憩中' };
+  if (!okMap[type]) { setMsg('いまは「' + type + '」は押せません（現在：' + st + '）', false); renderStatus(code); return; }
+  // 連打防止：同じ人・同じ種別が5秒以内なら拒否
+  if (punchEvents.some(e => e.code === code && e.type === type && (now.getTime() - e.dt) < 5000)) {
+    setMsg('連打防止：数秒待ってください', false); return;
   }
-  if (kind === 'out') {
-    if (!rec.in) { setMsg('出勤の打刻がありません', false); return; }
-    if (rec.out && !confirm('退勤はすでに ' + rec.out + ' に打刻されています。上書きしますか？')) return;
-    rec.out = t; done = '退勤';
-  }
-  if (kind === 'go') {
-    if (!rec.in) { setMsg('出勤の打刻がありません', false); return; }
-    if (rec.go1 && !rec.bk1) { setMsg('外出中です（戻りを押してください）', false); return; }
-    if (rec.go2 && !rec.bk2) { setMsg('外出中です（戻りを押してください）', false); return; }
-    if (!rec.go1) { rec.go1 = t; done = '外出１'; }
-    else if (!rec.go2) { rec.go2 = t; done = '外出２'; }
-    else { setMsg('外出は1日2回までです', false); return; }
-  }
-  if (kind === 'bk') {
-    if (rec.go1 && !rec.bk1) { rec.bk1 = t; done = '戻り１'; }
-    else if (rec.go2 && !rec.bk2) { rec.bk2 = t; done = '戻り２'; }
-    else { setMsg('外出の打刻がありません', false); return; }
-  }
-
-  rec.t = '打刻';                 // ふつうの打刻として記録
-  save(LS_REC, records);
+  punchEvents.push({
+    id: 'PU' + now.getTime() + Math.floor(Math.random() * 1000),
+    code, name: emp.name, type, dt: now.getTime(),
+    dateTimeStr: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
+    workDate: wd, site: office.code || '', terminal: '', t: '打刻'
+  });
+  save(LS_EVENTS, punchEvents);
+  rebuildRecords();
   syncDakoku();
   renderStatus(code);
-  setMsg(emp.name + ' さん　' + done + ' ' + t + ' を記録しました', true);
+  setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました', true);
   scheduleReset();
 }
 
@@ -890,7 +974,7 @@ function resetScreen() {
   document.getElementById('codeInput').value = '';
   document.getElementById('dispCode').textContent = '';
   document.getElementById('dispName').textContent = '';
-  ['st_in','st_out','st_go1','st_bk1','st_go2','st_bk2'].forEach(id => document.getElementById(id).textContent = '');
+  renderStatus(null);
   setMsg('', true);
   if (resetTimer) clearTimeout(resetTimer);
 }
@@ -980,6 +1064,8 @@ function toMin(hm) {
   return h*60 + m;
 }
 function workMinutes(rec) {
+  if (rec && rec.worked != null) return rec.worked;   // 打刻トランから算出済み
+  if (!rec || !rec.in || !rec.out) return null;       // 退勤なし＝計算できない
   const a = toMin(rec.in), b = toMin(rec.out);
   if (a === null || b === null || b < a) return null;
   let w = b - a;
@@ -1363,7 +1449,7 @@ function saveFix() {
   const emp = findEmp(code);
   const empName = emp ? emp.name : '(削除済み)';
   const n = daysInMonth(ym);
-  const changes = [];
+  const changes = []; let fxSeq = 0;
   for (let d = 1; d <= n; d++) {
     const key = ym + '-' + pad(d);
     const oldRec = (records[key] && records[key][code]) ? { ...records[key][code] } : {};
@@ -1374,20 +1460,26 @@ function saveFix() {
     const newHas = Object.keys(newRec).length > 0;
     const type = !oldHas ? '追加' : !newHas ? '取消' : '修正';
 
-    // 書き換え（追加・修正は種類を記録／取消は削除）
+    // 打刻トランを書き換え：その日その人のイベントを一旦消して、入力どおり作り直す
+    punchEvents = punchEvents.filter(e => !(e.workDate === key && e.code === code));
     if (newHas) {
-      if (!records[key]) records[key] = {};
-      newRec.t = type;               // この行の種類を打刻シートに残す
-      records[key][code] = newRec;
-    } else if (oldHas) {
-      delete records[key][code];
-      if (!Object.keys(records[key]).length) delete records[key];
+      const mk = (hm, ty) => {
+        if (!hm) return; const [h, m] = hm.split(':').map(Number);
+        const dObj = new Date(key + 'T00:00:00'); dObj.setHours(h, m, 0, 0);
+        punchEvents.push({ id: 'FX' + dObj.getTime() + (fxSeq++), code, name: empName, type: ty,
+          dt: dObj.getTime(), dateTimeStr: key + ' ' + pad(h) + ':' + pad(m) + ':00',
+          workDate: key, site: office.code || '', terminal: '', t: type });
+      };
+      mk(newRec.in, '出勤'); mk(newRec.go1, '休憩開始'); mk(newRec.bk1, '休憩終了');
+      mk(newRec.go2, '休憩開始'); mk(newRec.bk2, '休憩終了'); mk(newRec.out, '退勤');
     }
 
     changes.push({ time: nowStamp(), date: key, code, name: empName, type,
       before: recStr(oldRec), after: recStr(newRec) });
   }
-  save(LS_REC, records);
+  punchEvents.sort((a, b) => a.dt - b.dt);
+  save(LS_EVENTS, punchEvents);
+  rebuildRecords();
 
   if (changes.length) {
     fixLog = changes.concat(fixLog);   // 新しい変更を先頭に
@@ -1742,7 +1834,7 @@ function fullSync() {
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales, fixLog, depts, sites,
+    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -1761,9 +1853,11 @@ function restoreData(input) {
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
       fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
+      punchEvents = data.punchEvents || [];
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
       save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
-      save(LS_DEPT, depts); save(LS_SITE, sites);
+      save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents);
+      if (punchEvents.length) rebuildRecords();
       renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
       renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
       alert('読み込みました');
@@ -1780,8 +1874,13 @@ document.getElementById('codeInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') showEmployee();
 });
 
+/* 起動時：旧データを打刻トランに移行＋records再構築＋状態表示 */
+migrateRecordsToEvents();
+rebuildRecords();
+renderStatus(null);
+
 /* 起動時：この端末がまだ空なら、共有データ（他の端末で入れた分）を取り込む */
-if (syncUrl && employees.length === 0 && Object.keys(records).length === 0) {
+if (syncUrl && employees.length === 0 && punchEvents.length === 0) {
   pullState(false);
 }
 </script>
