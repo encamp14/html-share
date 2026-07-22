@@ -334,6 +334,8 @@
     <p class="note" style="margin:2px 0 14px;">※ パソコンで確認・修正する前に「最新を取り込む」を押すと、iPadの打刻が反映されます。</p>
     <div class="tab-btns">
       <button id="tabbtn-emp" class="on" onclick="adminTab('emp')">スタッフ</button>
+      <button id="tabbtn-dept" onclick="adminTab('dept')">部門</button>
+      <button id="tabbtn-site" onclick="adminTab('site')">事業場</button>
       <button id="tabbtn-fix" onclick="adminTab('fix')">勤怠の修正</button>
       <button id="tabbtn-sum" onclick="adminTab('sum')">月の集計・給与</button>
       <button id="tabbtn-dow" onclick="adminTab('dow')">曜日別集計</button>
@@ -366,6 +368,35 @@
       <p class="note">※ 「編集」を押すと上の欄に入るので、直して「登録・更新する」を押してください。<br>
       ※ 社員（月給の人）は時給を空欄のままでOK。給与の自動計算はパートさん向けです。<br>
       ※ 削除しても過去の打刻記録は残ります。</p>
+    </div>
+
+    <!-- 部門マスタ -->
+    <div class="tabpage" id="tab-dept">
+      <div class="row-form">
+        <input type="text" id="deptCode" placeholder="部門コード" style="width:140px">
+        <input type="text" id="deptName" placeholder="部門名（本部・飲食・宿泊 など）" style="width:260px">
+        <button onclick="addDept()">登録・更新する</button>
+      </div>
+      <div style="overflow-x:auto;"><table id="deptTable"></table></div>
+      <p class="note">※ 部門（会社の中の区分）を登録します。例：本部・飲食・宿泊。<br>
+      ※ この部門は「事業場」や「スタッフ」で選べるようになります。</p>
+    </div>
+
+    <!-- 事業場マスタ -->
+    <div class="tabpage" id="tab-site">
+      <div class="row-form">
+        <input type="text" id="siteCode" placeholder="事業場コード" style="width:130px">
+        <input type="text" id="siteName" placeholder="事業場名（勤務場所）" style="width:200px">
+        <select id="siteDept" style="min-width:150px"><option value="">部門を選ぶ</option></select>
+        <input type="text" id="siteAddr" placeholder="所在地（任意）" style="width:200px">
+        <label style="font-size:14px;color:#555">日付切替時刻</label>
+        <input type="time" id="siteCut" value="00:00" style="width:110px">
+        <select id="siteActive"><option value="有効">有効</option><option value="無効">無効</option></select>
+        <button onclick="addSite()">登録・更新する</button>
+      </div>
+      <div style="overflow-x:auto;"><table id="siteTable"></table></div>
+      <p class="note">※ 事業場＝勤務場所のことです。<br>
+      ※ <b>日付切替時刻</b>：これより前の打刻は「前日の勤務」として数えます（深夜まで営業する場所向け。ふつうは 00:00 でOK）。</p>
     </div>
 
     <!-- 勤怠の修正 -->
@@ -536,6 +567,8 @@ const LS_SALES = 'kintai_sales';
 const LS_PIN = 'kintai_pin';
 const LS_SYNC = 'kintai_syncurl';
 const LS_FIXLOG = 'kintai_fixlog';
+const LS_DEPT = 'kintai_depts';   // 部門マスタ
+const LS_SITE = 'kintai_sites';   // 事業場マスタ
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -550,6 +583,8 @@ let board     = load(LS_BOARD, []); // [{time, title, body}]
 let sales     = load(LS_SALES, {}); // { "2026-07-07": {amount, memo} }
 let pin       = load(LS_PIN, '9999');
 let fixLog    = load(LS_FIXLOG, []); // 修正履歴 [{time,date,code,name,type,before,after}]
+let depts     = load(LS_DEPT, []);  // 部門マスタ [{code, name}]
+let sites     = load(LS_SITE, []);  // 事業場マスタ [{code, name, dept, addr, cut, active}]
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMatfVBe8AzS0eMY2hZDruCdsME63hHVuX-O49FuyLptwk2MOpla7kNGbtg/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
@@ -717,7 +752,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -734,8 +769,11 @@ function pullState(manual) {
       if (obj.sales)     { sales     = obj.sales;     save(LS_SALES, sales); }
       if (obj.fixLog)    { fixLog    = obj.fixLog;    save(LS_FIXLOG, fixLog); }
       if (obj.office)    { office    = obj.office;    save(LS_OFF, office); renderOffice(); }
+      if (obj.depts)     { depts     = obj.depts;     save(LS_DEPT, depts); }
+      if (obj.sites)     { sites     = obj.sites;     save(LS_SITE, sites); }
       if (document.getElementById('adminModal').classList.contains('show')) {
-        renderEmpTable(); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
+        renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept');
+        fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
         renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
       }
       if (manual) alert('最新のデータを取り込みました');
@@ -1014,6 +1052,7 @@ function openAdmin() {
   if (p !== pin) { alert('暗証番号が違います'); return; }
 
   renderEmpTable();
+  renderDept(); renderSite(); fillDeptSelect('siteDept');
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
   const ym = thisYM();
   ['sumMonth','fixMonth','slipMonth','shiftMonth','salesMonth','dowMonth'].forEach(id => {
@@ -1024,12 +1063,12 @@ function openAdmin() {
   document.getElementById('offName').value = office.name;
   document.getElementById('syncUrlInput').value = syncUrl;
   updateSyncStatus();
-  renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow();
+  renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
   show('adminModal');
 }
 
 function adminTab(name) {
-  ['emp','fix','sum','dow','slip','shift','board','sales','set'].forEach(t => {
+  ['emp','dept','site','fix','sum','dow','slip','shift','board','sales','set'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('on', t===name);
     document.getElementById('tabbtn-'+t).classList.toggle('on', t===name);
   });
@@ -1072,6 +1111,103 @@ function renderDow() {
       + '<td class="num">' + (totPlus ? ('+' + yen(totPlus)) : '－') + '</td></tr>';
   }
   document.getElementById('dowTable').innerHTML = html;
+}
+
+/* ---- 部門マスタ ---- */
+function renderDept() {
+  let html = '<tr><th style="width:160px">部門コード</th><th>部門名</th><th style="width:110px"></th></tr>';
+  for (const d of depts) {
+    html += '<tr><td>' + escapeHtml(d.code) + '</td><td class="name">' + escapeHtml(d.name) + '</td>'
+      + '<td><button class="edit" onclick="editDept(\'' + escapeHtml(d.code) + '\')">編集</button>　'
+      + '<button class="del" onclick="delDept(\'' + escapeHtml(d.code) + '\')">削除</button></td></tr>';
+  }
+  if (!depts.length) html += '<tr><td colspan="3">まだ登録がありません。上の欄からどうぞ（例：本部・飲食・宿泊）。</td></tr>';
+  document.getElementById('deptTable').innerHTML = html;
+}
+function addDept() {
+  const code = document.getElementById('deptCode').value.trim();
+  const name = document.getElementById('deptName').value.trim();
+  if (!code || !name) { alert('部門コードと部門名を入れてください'); return; }
+  const ex = depts.find(d => d.code === code);
+  if (ex) ex.name = name; else depts.push({code, name});
+  save(LS_DEPT, depts);
+  document.getElementById('deptCode').value = ''; document.getElementById('deptName').value = '';
+  renderDept(); fillDeptSelect('siteDept'); syncDept();
+}
+function editDept(code) {
+  const d = depts.find(x => x.code === code); if (!d) return;
+  document.getElementById('deptCode').value = d.code;
+  document.getElementById('deptName').value = d.name;
+}
+function delDept(code) {
+  if (!confirm('部門「' + code + '」を削除しますか？')) return;
+  depts = depts.filter(d => d.code !== code);
+  save(LS_DEPT, depts); renderDept(); fillDeptSelect('siteDept'); syncDept();
+}
+function fillDeptSelect(id) {
+  const sel = document.getElementById(id); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">部門を選ぶ</option>' +
+    depts.map(d => '<option value="' + escapeHtml(d.code) + '">' + escapeHtml(d.code + '：' + d.name) + '</option>').join('');
+  sel.value = cur;
+}
+
+/* ---- 事業場マスタ ---- */
+function deptName(code) { const d = depts.find(x => x.code === code); return d ? d.name : ''; }
+function renderSite() {
+  let html = '<tr><th style="width:120px">コード</th><th>事業場名</th><th style="width:120px">部門</th><th>所在地</th><th style="width:90px">日付切替</th><th style="width:70px">状態</th><th style="width:110px"></th></tr>';
+  for (const s of sites) {
+    html += '<tr' + (s.active === '無効' ? ' style="color:#999;background:#f6f6f6"' : '') + '>'
+      + '<td>' + escapeHtml(s.code) + '</td><td class="name">' + escapeHtml(s.name) + '</td>'
+      + '<td>' + escapeHtml(s.dept ? (s.dept + '：' + deptName(s.dept)) : '－') + '</td>'
+      + '<td>' + escapeHtml(s.addr || '－') + '</td>'
+      + '<td>' + escapeHtml(s.cut || '00:00') + '</td>'
+      + '<td>' + escapeHtml(s.active || '有効') + '</td>'
+      + '<td><button class="edit" onclick="editSite(\'' + escapeHtml(s.code) + '\')">編集</button>　'
+      + '<button class="del" onclick="delSite(\'' + escapeHtml(s.code) + '\')">削除</button></td></tr>';
+  }
+  if (!sites.length) html += '<tr><td colspan="7">まだ登録がありません。上の欄からどうぞ（勤務場所を登録）。</td></tr>';
+  document.getElementById('siteTable').innerHTML = html;
+}
+function addSite() {
+  const code = document.getElementById('siteCode').value.trim();
+  const name = document.getElementById('siteName').value.trim();
+  const dept = document.getElementById('siteDept').value;
+  const addr = document.getElementById('siteAddr').value.trim();
+  const cut = document.getElementById('siteCut').value || '00:00';
+  const active = document.getElementById('siteActive').value;
+  if (!code || !name) { alert('事業場コードと事業場名を入れてください'); return; }
+  const ex = sites.find(s => s.code === code);
+  if (ex) Object.assign(ex, {name, dept, addr, cut, active}); else sites.push({code, name, dept, addr, cut, active});
+  save(LS_SITE, sites);
+  ['siteCode','siteName','siteAddr'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('siteCut').value = '00:00';
+  renderSite(); syncSite();
+}
+function editSite(code) {
+  const s = sites.find(x => x.code === code); if (!s) return;
+  document.getElementById('siteCode').value = s.code;
+  document.getElementById('siteName').value = s.name;
+  document.getElementById('siteDept').value = s.dept || '';
+  document.getElementById('siteAddr').value = s.addr || '';
+  document.getElementById('siteCut').value = s.cut || '00:00';
+  document.getElementById('siteActive').value = s.active || '有効';
+}
+function delSite(code) {
+  if (!confirm('事業場「' + code + '」を削除しますか？')) return;
+  sites = sites.filter(s => s.code !== code);
+  save(LS_SITE, sites); renderSite(); syncSite();
+}
+function syncDept() {
+  if (!syncUrl) return;
+  pushSheet('部門マスタ', ['部門コード','部門名'], depts.map(d => [d.code, d.name]));
+  pushState();
+}
+function syncSite() {
+  if (!syncUrl) return;
+  pushSheet('事業場マスタ', ['事業場コード','事業場名','部門コード','部門名','所在地','日付切替時刻','有効状態'],
+    sites.map(s => [s.code, s.name, s.dept || '', deptName(s.dept), s.addr || '', s.cut || '00:00', s.active || '有効']));
+  pushState();
 }
 
 /* ---- スタッフ ---- */
@@ -1599,14 +1735,14 @@ function fullSync() {
   if (!syncUrl) { alert('先にURLを入れて「保存する」を押してください'); return; }
   if (!confirm('今アプリにある全データ（打刻・スタッフ・月集計・売上・シフト・掲示板）をスプレッドシートに送り、グラフも更新します。よろしいですか？')) return;
   // すべてのシートを丸ごと最新にする
-  syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
+  syncDept(); syncSite(); syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
   alert('全データを送りました。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
 }
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales, fixLog,
+    employees, records, office, shifts, board, sales, fixLog, depts, sites,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -1624,10 +1760,11 @@ function restoreData(input) {
       employees = data.employees.map(e => ({kind:'パート', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
-      fixLog = data.fixLog || [];
+      fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
       save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
-      renderOffice(); renderEmpTable(); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
+      save(LS_DEPT, depts); save(LS_SITE, sites);
+      renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
       renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
       alert('読み込みました');
     } catch(e) {
