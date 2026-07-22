@@ -575,8 +575,11 @@
       <div class="row-form">
         <input type="tel" id="offCode" placeholder="事業所コード" style="width:150px">
         <input type="text" id="offName" placeholder="事業所名" style="width:220px">
+        <label style="font-size:14px;color:#555">日付切替時刻</label>
+        <input type="time" id="offCut" value="00:00" style="width:110px">
         <button onclick="saveOffice()">保存する</button>
       </div>
+      <p class="note" style="margin-top:2px;">※ 日付切替時刻：深夜まで営業する場合、この時刻より前の打刻を「前日の勤務」にします（ふつうは 00:00）。事業場マスタに時刻があればそちらが優先されます。</p>
       <h3>管理画面の暗証番号</h3>
       <div class="row-form">
         <input type="tel" id="pinInput" placeholder="新しい暗証番号（4桁）" style="width:220px" maxlength="4">
@@ -890,16 +893,44 @@ function setMsg(text, ok) {
 
 /* ===== 打刻トラン（1打刻1行）の中心ロジック ===== */
 function officeCut() { return (office.cut || '00:00'); }
-function workDateOf(d) {
-  const [ch, cm] = officeCut().split(':').map(Number);
+// 事業場マスタに日付切替時刻があればそれを使う（無ければ事業所の設定）
+function cutForSite(siteCode) {
+  const s = sites.find(x => x.code === siteCode);
+  return (s && s.cut) ? s.cut : officeCut();
+}
+function workDateOf(d, cut) {
+  cut = cut || officeCut();
+  const [ch, cm] = cut.split(':').map(Number);
   const cutMin = ch * 60 + cm;
   const nowMin = d.getHours() * 60 + d.getMinutes();
   const base = new Date(d);
   if (nowMin < cutMin) base.setDate(base.getDate() - 1); // 切替時刻より前は前日の勤務
   return base.getFullYear() + '-' + pad(base.getMonth() + 1) + '-' + pad(base.getDate());
 }
+// 未退勤の出勤（開いているセッション）の勤務日付。無ければ null
+function openSessionWorkDate(code) {
+  const evs = punchEvents.filter(e => e.code === code).sort((a, b) => a.dt - b.dt);
+  let openWd = null;
+  for (const e of evs) {
+    if (e.type === '出勤') openWd = e.workDate;
+    else if (e.type === '退勤') openWd = null;
+  }
+  return openWd;
+}
 function eventsOf(code, wd) {
   return punchEvents.filter(e => e.code === code && e.workDate === wd).sort((a, b) => a.dt - b.dt);
+}
+// 今の状態（全イベントの並びから。日をまたいでも正しく判定）
+function currentState(code) {
+  const evs = punchEvents.filter(e => e.code === code).sort((a, b) => a.dt - b.dt);
+  let st = '未出勤';
+  for (const e of evs) {
+    if (e.type === '出勤') st = '勤務中';
+    else if (e.type === '退勤') st = '退勤済';
+    else if (e.type === '休憩開始') st = '休憩中';
+    else if (e.type === '休憩終了') st = '勤務中';
+  }
+  return st;
 }
 function stateOf(code, wd) {
   let st = '未出勤';
@@ -979,12 +1010,13 @@ function renderStatus(code) {
     badge.textContent = '－'; badge.className = 'sb-badge st-none'; today.textContent = '';
     en('btnIn', false); en('btnOut', false); en('btnBS', false); en('btnBE', false); return;
   }
-  const wd = workDateOf(new Date());
-  const st = stateOf(code, wd);
+  const st = currentState(code);
   badge.textContent = st;
   badge.className = 'sb-badge ' + (st === '勤務中' ? 'st-work' : st === '休憩中' ? 'st-break' : st === '退勤済' ? 'st-out' : 'st-none');
+  // 開いているセッション（未退勤の出勤）があればその勤務日、無ければ今日の勤務日
+  const wd = openSessionWorkDate(code) || workDateOf(new Date());
   const ev = eventsOf(code, wd);
-  today.textContent = ev.length ? ('本日：' + ev.map(e => e.type + ' ' + e.dateTimeStr.slice(11, 16)).join('　')) : '本日の打刻はまだありません';
+  today.textContent = ev.length ? ('勤務日 ' + wd.slice(5) + '：' + ev.map(e => e.type + ' ' + e.dateTimeStr.slice(11, 16)).join('　')) : '本日の打刻はまだありません';
   en('btnIn', st === '未出勤' || st === '退勤済');   // 出勤（中抜けの再開も）
   en('btnOut', st === '勤務中');                     // 退勤
   en('btnBS', st === '勤務中');                      // 休憩開始
@@ -1019,19 +1051,21 @@ function punch(type) {
     document.getElementById('dispName').textContent = emp.name;
   }
   const now = new Date();
-  const wd = workDateOf(now);
-  const st = stateOf(code, wd);
+  const st = currentState(code);
   const okMap = { '出勤': (st === '未出勤' || st === '退勤済'), '退勤': st === '勤務中', '休憩開始': st === '勤務中', '休憩終了': st === '休憩中' };
   if (!okMap[type]) { setMsg('いまは「' + type + '」は押せません（現在：' + st + '）', false); renderStatus(code); return; }
   // 連打防止：同じ人・同じ種別が5秒以内なら拒否
   if (punchEvents.some(e => e.code === code && e.type === type && (now.getTime() - e.dt) < 5000)) {
     setMsg('連打防止：数秒待ってください', false); return;
   }
+  const site = office.code || '';
+  // 勤務日付：出勤は日付切替時刻から決定／退勤・休憩は開いている出勤と同じ勤務日を使う
+  const wd = (type === '出勤') ? workDateOf(now, cutForSite(site)) : (openSessionWorkDate(code) || workDateOf(now, cutForSite(site)));
   punchEvents.push({
     id: 'PU' + now.getTime() + Math.floor(Math.random() * 1000),
     code, name: emp.name, type, dt: now.getTime(),
     dateTimeStr: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
-    workDate: wd, site: office.code || '', terminal: '', t: '打刻'
+    workDate: wd, site, terminal: '', t: '打刻'
   });
   save(LS_EVENTS, punchEvents);
   rebuildRecords();
@@ -1222,6 +1256,7 @@ function openAdmin() {
   if (!document.getElementById('salesDate').value) document.getElementById('salesDate').value = todayKey();
   document.getElementById('offCode').value = office.code;
   document.getElementById('offName').value = office.name;
+  document.getElementById('offCut').value = office.cut || '00:00';
   document.getElementById('syncUrlInput').value = syncUrl;
   updateSyncStatus();
   renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
@@ -1954,7 +1989,8 @@ function renderSales() {
 function saveOffice() {
   const code = normalizeCode(document.getElementById('offCode').value) || '999';
   const name = document.getElementById('offName').value.trim() || '本部';
-  office = {code, name};
+  const cut = document.getElementById('offCut').value || '00:00';
+  office = {code, name, cut};
   save(LS_OFF, office);
   renderOffice();
   pushState();
