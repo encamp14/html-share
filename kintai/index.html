@@ -345,6 +345,8 @@
       <button id="tabbtn-emp" class="on" onclick="adminTab('emp')">スタッフ</button>
       <button id="tabbtn-dept" onclick="adminTab('dept')">部門</button>
       <button id="tabbtn-site" onclick="adminTab('site')">事業場</button>
+      <button id="tabbtn-term" onclick="adminTab('term')">端末</button>
+      <button id="tabbtn-commute" onclick="adminTab('commute')">交通費</button>
       <button id="tabbtn-fix" onclick="adminTab('fix')">勤怠の修正</button>
       <button id="tabbtn-sum" onclick="adminTab('sum')">月の集計・給与</button>
       <button id="tabbtn-dow" onclick="adminTab('dow')">曜日別集計</button>
@@ -358,19 +360,37 @@
     <!-- スタッフ -->
     <div class="tabpage on" id="tab-emp">
       <div class="row-form">
-        <input type="tel" id="empCode" placeholder="社員コード（数字）" style="width:160px">
-        <input type="text" id="empName" placeholder="氏名" style="width:180px">
-        <select id="empKind">
-          <option value="社員">社員</option>
+        <input type="tel" id="empCode" placeholder="社員コード（数字）" style="width:150px">
+        <input type="text" id="empName" placeholder="氏名" style="width:150px">
+        <select id="empKind" title="雇用区分">
+          <option value="正社員">正社員</option>
+          <option value="契約社員">契約社員</option>
           <option value="パート">パート・アルバイト</option>
         </select>
-        <input type="tel" id="empWage" placeholder="時給（円）" style="width:120px">
-        <input type="tel" id="empWend" placeholder="金土日の時給（円）" style="width:160px">
-        <input type="tel" id="empAllow" placeholder="交通費（円/日）" style="width:140px">
-        <label style="font-size:15px;color:#555">入社日</label>
-        <input type="date" id="empJoin" style="width:150px">
-        <label style="font-size:15px;color:#555">退社日</label>
-        <input type="date" id="empLeave" style="width:150px">
+        <select id="empSalKind" title="給与区分">
+          <option value="時給">時給</option>
+          <option value="日給月給">日給月給</option>
+          <option value="その他">その他</option>
+        </select>
+        <select id="empDept" title="所属部門"><option value="">部門を選ぶ</option></select>
+        <select id="empSite" title="所属事業場"><option value="">事業場を選ぶ</option></select>
+        <select id="empRule" title="適用勤務制度">
+          <option value="通常">通常</option>
+          <option value="1か月変形">1か月変形</option>
+          <option value="1年変形">1年変形</option>
+        </select>
+        <select id="empStatus" title="在籍状態">
+          <option value="在籍">在籍</option>
+          <option value="休職">休職</option>
+          <option value="退職">退職</option>
+        </select>
+        <input type="tel" id="empWage" placeholder="時給（円）" style="width:110px">
+        <input type="tel" id="empWend" placeholder="金土日の時給" style="width:130px">
+        <input type="tel" id="empAllow" placeholder="交通費（円/日）" style="width:130px">
+        <label style="font-size:14px;color:#555">入社日</label>
+        <input type="date" id="empJoin" style="width:145px">
+        <label style="font-size:14px;color:#555">退社日</label>
+        <input type="date" id="empLeave" style="width:145px">
         <button onclick="addEmployee()">登録・更新する</button>
       </div>
       <div style="overflow-x:auto;"><table id="empTable"></table></div>
@@ -406,6 +426,37 @@
       <div style="overflow-x:auto;"><table id="siteTable"></table></div>
       <p class="note">※ 事業場＝勤務場所のことです。<br>
       ※ <b>日付切替時刻</b>：これより前の打刻は「前日の勤務」として数えます（深夜まで営業する場所向け。ふつうは 00:00 でOK）。</p>
+    </div>
+
+    <!-- 端末マスタ -->
+    <div class="tabpage" id="tab-term">
+      <div class="row-form">
+        <input type="text" id="termId" placeholder="端末ID" style="width:140px">
+        <input type="text" id="termName" placeholder="端末名（受付のiPad など）" style="width:220px">
+        <select id="termSite" style="min-width:160px"><option value="">設置事業場を選ぶ</option></select>
+        <select id="termActive"><option value="有効">有効</option><option value="無効">無効</option></select>
+        <button onclick="addTerm()">登録・更新する</button>
+      </div>
+      <div style="overflow-x:auto;"><table id="termTable"></table></div>
+      <p class="note">※ 打刻に使う端末（iPadなど）を登録します。どの事業場に置いてあるかも記録できます。</p>
+    </div>
+
+    <!-- 交通費マスタ -->
+    <div class="tabpage" id="tab-commute">
+      <div class="row-form">
+        <select id="cmEmp" style="min-width:160px"><option value="">スタッフを選ぶ</option></select>
+        <select id="cmSite" style="min-width:150px"><option value="">事業場を選ぶ</option></select>
+        <select id="cmKind"><option value="日額">日額</option><option value="月額">月額</option></select>
+        <input type="tel" id="cmAmount" placeholder="金額（円）" style="width:120px">
+        <label style="font-size:14px;color:#555">適用開始</label>
+        <input type="date" id="cmStart" style="width:150px">
+        <label style="font-size:14px;color:#555">適用終了</label>
+        <input type="date" id="cmEnd" style="width:150px">
+        <button onclick="addCommute()">登録する</button>
+      </div>
+      <div style="overflow-x:auto;"><table id="commuteTable"></table></div>
+      <p class="note">※ スタッフごと・事業場ごとに交通費を登録できます（月額 or 日額）。<br>
+      ※ 応援などで複数の事業場に行く人は、事業場ごとに1行ずつ登録できます。適用期間で「いつからいつまで」も管理できます。</p>
     </div>
 
     <!-- 勤怠の修正 -->
@@ -580,6 +631,8 @@ const LS_DEPT = 'kintai_depts';   // 部門マスタ
 const LS_SITE = 'kintai_sites';   // 事業場マスタ
 const LS_EVENTS = 'kintai_events';    // 打刻トラン（1打刻1行）
 const LS_MIGRATED = 'kintai_migrated_ev';
+const LS_TERM = 'kintai_terms';       // 端末マスタ
+const LS_COMMUTE = 'kintai_commutes'; // 交通費マスタ
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -597,12 +650,14 @@ let fixLog    = load(LS_FIXLOG, []); // 修正履歴 [{time,date,code,name,type,
 let depts     = load(LS_DEPT, []);  // 部門マスタ [{code, name}]
 let sites     = load(LS_SITE, []);  // 事業場マスタ [{code, name, dept, addr, cut, active}]
 let punchEvents = load(LS_EVENTS, []); // 打刻トラン [{id,code,name,type,dt,dateTimeStr,workDate,site,terminal,t}]
+let terms     = load(LS_TERM, []);  // 端末マスタ [{id, name, site, active}]
+let commutes  = load(LS_COMMUTE, []); // 交通費マスタ [{code, site, kind, amount, start, end}]
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMatfVBe8AzS0eMY2hZDruCdsME63hHVuX-O49FuyLptwk2MOpla7kNGbtg/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
 
 // 旧データ（時給なし）を新形式にそろえる
-employees = employees.map(e => ({kind:'パート', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
+employees = employees.map(e => ({kind:'正社員', salKind:'時給', dept:'', site:'', rule:'通常', status:'在籍', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
 
 const FIELDS = ['in','out','go1','bk1','go2','bk2'];
 const FIELD_NAMES = {in:'出勤', out:'退勤', go1:'外出１', bk1:'戻り１', go2:'外出２', bk2:'戻り２'};
@@ -680,8 +735,21 @@ function pushSheet(name, headers, rows) {
 }
 function syncStaff() {
   const rows = [...employees].sort((a,b) => Number(a.code)-Number(b.code))
-    .map(e => [e.code, e.name, e.kind || '', e.wage || '', e.wend || '', e.allow || '', e.join || '', e.leave || '']);
-  pushSheet('スタッフ', ['社員コード','氏名','区分','時給','金土日時給','交通費','入社日','退社日'], rows);
+    .map(e => [e.code, e.name, e.kind || '', e.salKind || '', e.dept || '', e.site || '',
+      e.rule || '', e.status || '在籍', e.join || '', e.leave || '', e.wage || '', e.wend || '', e.allow || '']);
+  pushSheet('スタッフ', ['社員コード','氏名','雇用区分','給与区分','所属部門','所属事業場','勤務制度','在籍状態','入社日','退社日','時給','金土日時給','交通費'], rows);
+  pushState();
+}
+function syncTerm() {
+  if (!syncUrl) return;
+  pushSheet('端末マスタ', ['端末ID','端末名','設置事業場','有効状態'],
+    terms.map(t => [t.id, t.name, t.site || '', t.active || '有効']));
+  pushState();
+}
+function syncCommute() {
+  if (!syncUrl) return;
+  pushSheet('交通費マスタ', ['社員コード','氏名','事業場','計算区分','金額','適用開始日','適用終了日'],
+    commutes.map(c => { const emp = findEmp(c.code); return [c.code, emp ? emp.name : '', c.site || '', c.kind, c.amount, c.start || '', c.end || '']; }));
   pushState();
 }
 function syncSalesAll() {
@@ -758,7 +826,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, terms, commutes });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -777,11 +845,15 @@ function pullState(manual) {
       if (obj.office)    { office    = obj.office;    save(LS_OFF, office); renderOffice(); }
       if (obj.depts)     { depts     = obj.depts;     save(LS_DEPT, depts); }
       if (obj.sites)     { sites     = obj.sites;     save(LS_SITE, sites); }
+      if (obj.terms)     { terms     = obj.terms;     save(LS_TERM, terms); }
+      if (obj.commutes)  { commutes  = obj.commutes;  save(LS_COMMUTE, commutes); }
       if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
       renderStatus(currentCode);
       if (document.getElementById('adminModal').classList.contains('show')) {
-        renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept');
-        fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
+        renderEmpTable(); renderDept(); renderSite(); renderTerm(); renderCommute();
+        fillDeptSelect('siteDept'); fillDeptSelect('empDept');
+        fillSiteSelect('empSite'); fillSiteSelect('termSite'); fillSiteSelect('cmSite');
+        fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
         renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
       }
       if (manual) alert('最新のデータを取り込みました');
@@ -1138,7 +1210,10 @@ function openAdmin() {
   if (p !== pin) { alert('暗証番号が違います'); return; }
 
   renderEmpTable();
-  renderDept(); renderSite(); fillDeptSelect('siteDept');
+  renderDept(); renderSite(); renderTerm(); renderCommute();
+  fillDeptSelect('siteDept'); fillDeptSelect('empDept');
+  fillSiteSelect('empSite', '事業場を選ぶ'); fillSiteSelect('termSite', '設置事業場を選ぶ'); fillSiteSelect('cmSite', '事業場を選ぶ');
+  fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
   const ym = thisYM();
   ['sumMonth','fixMonth','slipMonth','shiftMonth','salesMonth','dowMonth'].forEach(id => {
@@ -1154,7 +1229,7 @@ function openAdmin() {
 }
 
 function adminTab(name) {
-  ['emp','dept','site','fix','sum','dow','slip','shift','board','sales','set'].forEach(t => {
+  ['emp','dept','site','term','commute','fix','sum','dow','slip','shift','board','sales','set'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('on', t===name);
     document.getElementById('tabbtn-'+t).classList.toggle('on', t===name);
   });
@@ -1295,6 +1370,85 @@ function syncSite() {
     sites.map(s => [s.code, s.name, s.dept || '', deptName(s.dept), s.addr || '', s.cut || '00:00', s.active || '有効']));
   pushState();
 }
+function siteName(code) { const s = sites.find(x => x.code === code); return s ? s.name : (code || ''); }
+function fillSiteSelect(id, placeholder) {
+  const sel = document.getElementById(id); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">' + (placeholder || '事業場を選ぶ') + '</option>' +
+    sites.map(s => '<option value="' + escapeHtml(s.code) + '">' + escapeHtml(s.code + '：' + s.name) + '</option>').join('');
+  sel.value = cur;
+}
+
+/* ---- 端末マスタ ---- */
+function renderTerm() {
+  let html = '<tr><th style="width:150px">端末ID</th><th>端末名</th><th style="width:150px">設置事業場</th><th style="width:70px">状態</th><th style="width:110px"></th></tr>';
+  for (const t of terms) {
+    html += '<tr' + (t.active === '無効' ? ' style="color:#999;background:#f6f6f6"' : '') + '>'
+      + '<td>' + escapeHtml(t.id) + '</td><td class="name">' + escapeHtml(t.name) + '</td>'
+      + '<td>' + escapeHtml(t.site ? siteName(t.site) : '－') + '</td>'
+      + '<td>' + escapeHtml(t.active || '有効') + '</td>'
+      + '<td><button class="edit" onclick="editTerm(\'' + escapeHtml(t.id) + '\')">編集</button>　'
+      + '<button class="del" onclick="delTerm(\'' + escapeHtml(t.id) + '\')">削除</button></td></tr>';
+  }
+  if (!terms.length) html += '<tr><td colspan="5">まだ登録がありません。</td></tr>';
+  document.getElementById('termTable').innerHTML = html;
+}
+function addTerm() {
+  const id = document.getElementById('termId').value.trim();
+  const name = document.getElementById('termName').value.trim();
+  const site = document.getElementById('termSite').value;
+  const active = document.getElementById('termActive').value;
+  if (!id || !name) { alert('端末IDと端末名を入れてください'); return; }
+  const ex = terms.find(t => t.id === id);
+  if (ex) Object.assign(ex, {name, site, active}); else terms.push({id, name, site, active});
+  save(LS_TERM, terms);
+  document.getElementById('termId').value = ''; document.getElementById('termName').value = '';
+  renderTerm(); syncTerm();
+}
+function editTerm(id) {
+  const t = terms.find(x => x.id === id); if (!t) return;
+  document.getElementById('termId').value = t.id;
+  document.getElementById('termName').value = t.name;
+  document.getElementById('termSite').value = t.site || '';
+  document.getElementById('termActive').value = t.active || '有効';
+}
+function delTerm(id) {
+  if (!confirm('端末「' + id + '」を削除しますか？')) return;
+  terms = terms.filter(t => t.id !== id); save(LS_TERM, terms); renderTerm(); syncTerm();
+}
+
+/* ---- 交通費マスタ ---- */
+function renderCommute() {
+  let html = '<tr><th style="width:110px">社員</th><th style="width:130px">事業場</th><th style="width:70px">区分</th><th style="width:100px">金額</th><th style="width:110px">適用開始</th><th style="width:110px">適用終了</th><th style="width:80px"></th></tr>';
+  commutes.forEach((c, i) => {
+    const emp = findEmp(c.code);
+    html += '<tr><td class="name">' + escapeHtml(c.code + '：' + (emp ? emp.name : '')) + '</td>'
+      + '<td>' + escapeHtml(c.site ? siteName(c.site) : '（全体）') + '</td>'
+      + '<td>' + escapeHtml(c.kind) + '</td>'
+      + '<td class="num">' + (c.amount ? yen(Number(c.amount)) : '－') + '</td>'
+      + '<td>' + escapeHtml(c.start || '－') + '</td><td>' + escapeHtml(c.end || '－') + '</td>'
+      + '<td><button class="del" onclick="delCommute(' + i + ')">削除</button></td></tr>';
+  });
+  if (!commutes.length) html += '<tr><td colspan="7">まだ登録がありません。</td></tr>';
+  document.getElementById('commuteTable').innerHTML = html;
+}
+function addCommute() {
+  const code = document.getElementById('cmEmp').value;
+  const site = document.getElementById('cmSite').value;
+  const kind = document.getElementById('cmKind').value;
+  const amount = normalizeCode(document.getElementById('cmAmount').value);
+  const start = document.getElementById('cmStart').value;
+  const end = document.getElementById('cmEnd').value;
+  if (!code || !amount) { alert('スタッフと金額を入れてください'); return; }
+  commutes.push({code, site, kind, amount, start, end});
+  save(LS_COMMUTE, commutes);
+  document.getElementById('cmAmount').value = '';
+  renderCommute(); syncCommute();
+}
+function delCommute(i) {
+  if (!confirm('この交通費の登録を削除しますか？')) return;
+  commutes.splice(i, 1); save(LS_COMMUTE, commutes); renderCommute(); syncCommute();
+}
 
 /* ---- スタッフ ---- */
 function fillEmpSelect(id) {
@@ -1304,18 +1458,18 @@ function fillEmpSelect(id) {
 }
 
 function renderEmpTable() {
-  let html = '<tr><th style="width:80px">コード</th><th>氏名</th><th style="width:100px">区分</th><th style="width:85px">時給</th><th style="width:100px">金土日時給</th><th style="width:90px">交通費/日</th><th style="width:105px">入社日</th><th style="width:105px">退社日</th><th style="width:115px"></th></tr>';
+  let html = '<tr><th style="width:70px">コード</th><th>氏名</th><th style="width:90px">雇用区分</th><th style="width:80px">給与区分</th><th style="width:90px">部門</th><th style="width:100px">事業場</th><th style="width:80px">時給</th><th style="width:80px">在籍</th><th style="width:115px"></th></tr>';
   const sorted = [...employees].sort((a,b) => Number(a.code) - Number(b.code));
   for (const e of sorted) {
-    const retired = e.leave && new Date(e.leave + 'T23:59:59') < new Date();
-    html += '<tr' + (retired ? ' style="color:#999;background:#f6f6f6"' : '') + '>'
-      + '<td>' + escapeHtml(e.code) + '</td><td class="name">' + escapeHtml(e.name) + (retired ? '（退社）' : '') + '</td>'
+    const off = (e.status && e.status !== '在籍') || (e.leave && new Date(e.leave + 'T23:59:59') < new Date());
+    html += '<tr' + (off ? ' style="color:#999;background:#f6f6f6"' : '') + '>'
+      + '<td>' + escapeHtml(e.code) + '</td><td class="name">' + escapeHtml(e.name) + '</td>'
       + '<td>' + escapeHtml(e.kind || '') + '</td>'
+      + '<td>' + escapeHtml(e.salKind || '時給') + '</td>'
+      + '<td>' + escapeHtml(e.dept ? deptName(e.dept) : '－') + '</td>'
+      + '<td>' + escapeHtml(e.site ? siteName(e.site) : '－') + '</td>'
       + '<td class="num">' + (e.wage ? yen(Number(e.wage)) : '－') + '</td>'
-      + '<td class="num">' + (e.wend ? yen(Number(e.wend)) : (e.wage ? '同じ' : '－')) + '</td>'
-      + '<td class="num">' + (e.allow ? yen(Number(e.allow)) : '－') + '</td>'
-      + '<td>' + (e.join || '－') + '</td>'
-      + '<td>' + (e.leave || '－') + '</td>'
+      + '<td>' + escapeHtml(e.status || '在籍') + '</td>'
       + '<td><button class="edit" onclick="editEmployee(\'' + escapeHtml(e.code) + '\')">編集</button>　'
       + '<button class="del" onclick="delEmployee(\'' + escapeHtml(e.code) + '\')">削除</button></td></tr>';
   }
@@ -1327,6 +1481,11 @@ function addEmployee() {
   const code = normalizeCode(document.getElementById('empCode').value);
   const name = document.getElementById('empName').value.trim();
   const kind = document.getElementById('empKind').value;
+  const salKind = document.getElementById('empSalKind').value;
+  const dept = document.getElementById('empDept').value;
+  const site = document.getElementById('empSite').value;
+  const rule = document.getElementById('empRule').value;
+  const status = document.getElementById('empStatus').value;
   const wage = normalizeCode(document.getElementById('empWage').value);
   const wend = normalizeCode(document.getElementById('empWend').value);
   const allow = normalizeCode(document.getElementById('empAllow').value);
@@ -1334,8 +1493,9 @@ function addEmployee() {
   const leave = document.getElementById('empLeave').value;
   if (!code || !name) { alert('社員コードと氏名を両方入れてください'); return; }
   const exist = findEmp(code);
-  if (exist) Object.assign(exist, {name, kind, wage, wend, allow, join, leave});
-  else employees.push({code, name, kind, wage, wend, allow, join, leave});
+  const rec = {name, kind, salKind, dept, site, rule, status, wage, wend, allow, join, leave};
+  if (exist) Object.assign(exist, rec);
+  else employees.push({code, ...rec});
   save(LS_EMP, employees);
   ['empCode','empName','empWage','empWend','empAllow','empJoin','empLeave'].forEach(id => document.getElementById(id).value = '');
   renderEmpTable();
@@ -1348,7 +1508,12 @@ function editEmployee(code) {
   if (!e) return;
   document.getElementById('empCode').value = e.code;
   document.getElementById('empName').value = e.name;
-  document.getElementById('empKind').value = e.kind || 'パート';
+  document.getElementById('empKind').value = e.kind || '正社員';
+  document.getElementById('empSalKind').value = e.salKind || '時給';
+  document.getElementById('empDept').value = e.dept || '';
+  document.getElementById('empSite').value = e.site || '';
+  document.getElementById('empRule').value = e.rule || '通常';
+  document.getElementById('empStatus').value = e.status || '在籍';
   document.getElementById('empWage').value = e.wage || '';
   document.getElementById('empWend').value = e.wend || '';
   document.getElementById('empAllow').value = e.allow || '';
@@ -1827,14 +1992,14 @@ function fullSync() {
   if (!syncUrl) { alert('先にURLを入れて「保存する」を押してください'); return; }
   if (!confirm('今アプリにある全データ（打刻・スタッフ・月集計・売上・シフト・掲示板）をスプレッドシートに送り、グラフも更新します。よろしいですか？')) return;
   // すべてのシートを丸ごと最新にする
-  syncDept(); syncSite(); syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
+  syncDept(); syncSite(); syncTerm(); syncCommute(); syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
   alert('全データを送りました。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
 }
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents,
+    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, terms, commutes,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -1849,14 +2014,15 @@ function restoreData(input) {
       const data = JSON.parse(reader.result);
       if (!data.employees || !data.records) throw new Error('形式が違います');
       if (!confirm('今のデータをバックアップの内容（' + (data.saved || '日時不明') + ' 保存分）で置き換えます。よろしいですか？')) return;
-      employees = data.employees.map(e => ({kind:'パート', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
+      employees = data.employees.map(e => ({kind:'正社員', salKind:'時給', dept:'', site:'', rule:'通常', status:'在籍', wage:'', wend:'', allow:'', join:'', leave:'', ...e}));
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
       fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
-      punchEvents = data.punchEvents || [];
+      punchEvents = data.punchEvents || []; terms = data.terms || []; commutes = data.commutes || [];
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
       save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
       save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents);
+      save(LS_TERM, terms); save(LS_COMMUTE, commutes);
       if (punchEvents.length) rebuildRecords();
       renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
       renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
