@@ -337,7 +337,7 @@
 <div class="modal" id="adminModal">
   <div class="box">
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-      <h2 style="border:none; margin:0;">管理画面</h2>
+      <h2 style="border:none; margin:0;">管理画面 <span id="loginWho" style="font-size:14px;color:#5b5ea6;font-weight:normal;"></span></h2>
       <button class="act-btn" onclick="pullState(true)" title="iPadなど他の端末で入力した最新のデータを取り込みます">🔄 最新を取り込む</button>
     </div>
     <p class="note" style="margin:2px 0 14px;">※ パソコンで確認・修正する前に「最新を取り込む」を押すと、iPadの打刻が反映されます。</p>
@@ -588,6 +588,7 @@
       <div class="row-form">
         <input type="text" id="edName" placeholder="担当者の名前" style="width:180px">
         <input type="text" id="edPw" placeholder="その人のパスワード" style="width:180px">
+        <label style="font-size:15px;"><input type="checkbox" id="edChief" style="transform:scale(1.3);margin-right:5px;">主担当（代表）にする</label>
         <button onclick="addEditor()">追加する</button>
       </div>
       <div style="overflow-x:auto;"><table id="editorTable"></table></div>
@@ -897,6 +898,7 @@ function pullState(manual) {
 
 /* ================= 打刻画面 ================= */
 let currentCode = null;
+let currentUser = null;  // 今ログイン中の管理者 {name, pw, chief}
 let resetTimer = null;
 
 function renderOffice() {
@@ -1287,9 +1289,21 @@ function show(id){ document.getElementById(id).classList.add('show'); }
 function hide(id){ document.getElementById(id).classList.remove('show'); }
 
 function openAdmin() {
-  const p = prompt('管理用の暗証番号を入れてください');
-  if (p === null) return;
-  if (p !== pin) { alert('暗証番号が違います'); return; }
+  if (editors.length === 0) {
+    // 担当者がまだ登録されていない → 従来の暗証番号（この人は主担当あつかい）
+    const p = prompt('管理用の暗証番号を入れてください');
+    if (p === null) return;
+    if (p !== pin) { alert('暗証番号が違います'); return; }
+    currentUser = { name: '管理者', chief: true };
+  } else {
+    // 担当者ログイン：自分のパスワードで
+    const pw = prompt('あなたのパスワードでログインしてください');
+    if (pw === null) return;
+    const u = editors.find(e => e.pw === pw.trim());
+    if (!u) { alert('パスワードが違います。\n登録された担当者だけが管理画面を開けます。'); return; }
+    currentUser = u;
+  }
+  updateChiefUI();
 
   renderEmpTable();
   renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
@@ -1701,15 +1715,8 @@ function saveFix() {
   if (confirms[ym] && !confirm('⚠️ ' + ym + ' は「確定済み」の月です。\n修正すると確定した内容が変わります。本当に修正しますか？')) return;
   const emp = findEmp(code);
   const empName = emp ? emp.name : '(削除済み)';
-  // 修正できる担当者が登録されていれば、本人のパスワードで確認
-  let editor = '管理者';
-  if (editors.length) {
-    const pw = prompt('修正するあなたのパスワードを入力してください');
-    if (pw === null) return;
-    const ed = editors.find(e => e.pw === pw.trim());
-    if (!ed) { alert('パスワードが違います。\n勤怠の修正ができるのは、登録された担当者だけです。'); return; }
-    editor = ed.name;
-  }
+  // 修正した人＝ログイン中の担当者（管理画面を開くときに本人パスワードで確認ずみ）
+  const editor = (currentUser && currentUser.name) ? currentUser.name : '管理者';
   let reason = '';                            // 修正の理由（最初の変更時に1回だけ聞く）
   let askedReason = false;
   const n = daysInMonth(ym);
@@ -2097,6 +2104,7 @@ function renderSales() {
 
 /* ---- 設定 ---- */
 function saveOffice() {
+  if (!requireChief()) return;
   const code = normalizeCode(document.getElementById('offCode').value) || '999';
   const name = document.getElementById('offName').value.trim() || '本部';
   const cut = document.getElementById('offCut').value || '00:00';
@@ -2108,6 +2116,7 @@ function saveOffice() {
 }
 
 function savePin() {
+  if (!requireChief()) return;
   const p = normalizeCode(document.getElementById('pinInput').value);
   if (!/^[0-9]{4}$/.test(p)) { alert('数字4桁で入れてください'); return; }
   pin = p;
@@ -2116,34 +2125,52 @@ function savePin() {
   alert('暗証番号を変更しました');
 }
 
+/* ---- 管理者の権限 ---- */
+function updateChiefUI() {
+  const el = document.getElementById('loginWho');
+  if (el && currentUser) el.textContent = '（ログイン中：' + currentUser.name + '・' + (currentUser.chief ? '主担当' : '担当') + '）';
+}
+// 主担当だけができる操作のチェック
+function requireChief() {
+  if (currentUser && currentUser.chief) return true;
+  alert('この操作は「主担当（代表）」だけができます。');
+  return false;
+}
+
 /* ---- 修正できる担当者（パスワード） ---- */
 function renderEditors() {
   const tbl = document.getElementById('editorTable'); if (!tbl) return;
-  let html = '<tr><th>担当者の名前</th><th style="width:150px">パスワード</th><th style="width:90px"></th></tr>';
+  let html = '<tr><th>担当者の名前</th><th style="width:150px">パスワード</th><th style="width:100px">役割</th><th style="width:90px"></th></tr>';
   editors.forEach((e, i) => {
-    html += '<tr><td class="name">' + escapeHtml(e.name) + '</td>'
+    html += '<tr' + (e.chief ? ' style="background:#eef1ff"' : '') + '><td class="name">' + escapeHtml(e.name) + '</td>'
       + '<td>' + escapeHtml('●'.repeat((e.pw || '').length)) + '</td>'
+      + '<td>' + (e.chief ? '<b style="color:#5b5ea6">主担当</b>' : '担当') + '</td>'
       + '<td><button class="del" onclick="delEditor(' + i + ')">削除</button></td></tr>';
   });
-  if (!editors.length) html += '<tr><td colspan="3" style="color:#c00">まだ誰も登録されていません（今は誰でも修正できる状態です）</td></tr>';
+  if (!editors.length) html += '<tr><td colspan="4" style="color:#c00">まだ誰も登録されていません（今は暗証番号だけで誰でも修正できる状態です）</td></tr>';
   tbl.innerHTML = html;
 }
 function addEditor() {
+  if (editors.length && !requireChief()) return;   // 2人目以降は主担当だけが追加できる
   const name = document.getElementById('edName').value.trim();
   const pw = document.getElementById('edPw').value.trim();
+  const chief = document.getElementById('edChief').checked;
   if (!name || !pw) { alert('名前とパスワードを両方入れてください'); return; }
   if (editors.some(e => e.pw === pw)) { alert('そのパスワードは別の人が使っています。別のものにしてください'); return; }
-  editors.push({ name, pw });
+  editors.push({ name, pw, chief: (editors.length === 0 ? true : chief) }); // 1人目は自動で主担当
   save(LS_EDITORS, editors);
-  document.getElementById('edName').value = ''; document.getElementById('edPw').value = '';
+  document.getElementById('edName').value = ''; document.getElementById('edPw').value = ''; document.getElementById('edChief').checked = false;
   renderEditors(); pushState();
 }
 function delEditor(i) {
-  if (!confirm(editors[i].name + ' さんを、修正できる担当者から外しますか？')) return;
+  if (!requireChief()) return;
+  if (editors[i].chief && editors.filter(e => e.chief).length <= 1) { alert('主担当は最低1人必要です。先に別の人を主担当にしてから外してください。'); return; }
+  if (!confirm(editors[i].name + ' さんを、管理者から外しますか？')) return;
   editors.splice(i, 1); save(LS_EDITORS, editors); renderEditors(); pushState();
 }
 
 function saveSyncUrl() {
+  if (!requireChief()) return;
   syncUrl = document.getElementById('syncUrlInput').value.trim();
   save(LS_SYNC, syncUrl);
   updateSyncStatus();
