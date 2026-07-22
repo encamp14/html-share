@@ -486,6 +486,8 @@
         <input type="month" id="sumMonth">
         <button onclick="renderSummary()">表示する</button>
         <button class="gray" onclick="exportCSV()">CSVで保存（給与計算用）</button>
+        <span id="confirmStatus" style="font-size:15px;"></span>
+        <button id="confirmBtn" onclick="toggleConfirm()">この月を確定する</button>
       </div>
       <h3>スタッフごとのまとめ・給与見込み</h3>
       <div style="overflow-x:auto;"><table id="sumTable"></table></div>
@@ -636,6 +638,7 @@ const LS_EVENTS = 'kintai_events';    // 打刻トラン（1打刻1行）
 const LS_MIGRATED = 'kintai_migrated_ev';
 const LS_TERM = 'kintai_terms';       // 端末マスタ
 const LS_COMMUTE = 'kintai_commutes'; // 交通費マスタ
+const LS_CONFIRM = 'kintai_confirms'; // 月次確定 {ym:{at}}
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -655,6 +658,7 @@ let sites     = load(LS_SITE, []);  // 事業場マスタ [{code, name, dept, ad
 let punchEvents = load(LS_EVENTS, []); // 打刻トラン [{id,code,name,type,dt,dateTimeStr,workDate,site,terminal,t}]
 let terms     = load(LS_TERM, []);  // 端末マスタ [{id, name, site, active}]
 let commutes  = load(LS_COMMUTE, []); // 交通費マスタ [{code, site, kind, amount, start, end}]
+let confirms  = load(LS_CONFIRM, {}); // 月次確定 {ym:{at}}
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMatfVBe8AzS0eMY2hZDruCdsME63hHVuX-O49FuyLptwk2MOpla7kNGbtg/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
@@ -829,7 +833,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, terms, commutes });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, terms, commutes, confirms });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -850,6 +854,7 @@ function pullState(manual) {
       if (obj.sites)     { sites     = obj.sites;     save(LS_SITE, sites); }
       if (obj.terms)     { terms     = obj.terms;     save(LS_TERM, terms); }
       if (obj.commutes)  { commutes  = obj.commutes;  save(LS_COMMUTE, commutes); }
+      if (obj.confirms)  { confirms  = obj.confirms;  save(LS_CONFIRM, confirms); }
       if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
       renderStatus(currentCode);
       if (document.getElementById('adminModal').classList.contains('show')) {
@@ -1190,6 +1195,21 @@ function yen(n) { return n.toLocaleString('ja-JP') + '円'; }
 function isWeekendG(g) { return g === 0 || g === 5 || g === 6; }
 
 // その月のスタッフごとの合計（日数・分・給与見込み・曜日別）
+// 交通費マスタからその月の交通費を計算（登録が無ければ null＝スタッフ欄の交通費を使う）
+function commuteTotal(code, ym, days) {
+  const [y, m] = ym.split('-').map(Number);
+  const first = ym + '-01';
+  const last = ym + '-' + pad(new Date(y, m, 0).getDate());
+  const entries = commutes.filter(c => c.code === code &&
+    (!c.start || c.start <= last) && (!c.end || c.end >= first));
+  if (!entries.length) return null;
+  let total = 0;
+  for (const c of entries) {
+    const amt = Number(c.amount) || 0;
+    total += (c.kind === '月額') ? amt : amt * days;   // 月額はそのまま／日額は出勤日数ぶん
+  }
+  return total;
+}
 function monthTotals(ym) {
   const per = {};
   const days = Object.keys(records).filter(k => k.startsWith(ym)).sort();
@@ -1224,7 +1244,8 @@ function monthTotals(ym) {
       p.baseWeek = Math.floor(p.weekMin * p.wage / 60);      // 平日の時給分
       p.baseWend = Math.floor(p.wendMin * wendWage / 60);    // 金土日の時給分
       p.base = p.baseWeek + p.baseWend;                      // 時給分の合計
-      p.allowTotal = p.allow * p.days;                       // 交通費
+      const cm = commuteTotal(code, ym, p.days);             // 交通費マスタ優先
+      p.allowTotal = (cm !== null) ? cm : (p.allow * p.days); // マスタが無ければスタッフ欄の交通費
       p.pay = p.base + p.allowTotal;                         // 合計見込み
       p.wendPlus = p.wend ? Math.floor(p.wendMin * (p.wend - p.wage) / 60) : 0; // 週末時給アップで増える額
     } else {
@@ -1646,6 +1667,7 @@ function saveFix() {
   const ym = document.getElementById('fixMonth').value;
   const code = document.getElementById('fixEmp').value;
   if (!ym || !code) return;
+  if (confirms[ym] && !confirm('⚠️ ' + ym + ' は「確定済み」の月です。\n修正すると確定した内容が変わります。本当に修正しますか？')) return;
   const emp = findEmp(code);
   const empName = emp ? emp.name : '(削除済み)';
   const n = daysInMonth(ym);
@@ -1739,6 +1761,41 @@ function renderSummary() {
   }
   if (!rows.length) dhtml += '<tr><td colspan="10">この月の打刻はありません</td></tr>';
   document.getElementById('detailTable').innerHTML = dhtml;
+  renderConfirmStatus();
+}
+
+/* ---- 勤怠の月次確定 ---- */
+function renderConfirmStatus() {
+  const ym = document.getElementById('sumMonth').value;
+  const el = document.getElementById('confirmStatus'); const btn = document.getElementById('confirmBtn');
+  if (!el || !btn) return;
+  if (!ym) { el.textContent = ''; return; }
+  if (confirms[ym]) {
+    el.innerHTML = '　<b style="color:#188038">✔ 確定済み</b>（' + escapeHtml(confirms[ym].at) + '）';
+    btn.textContent = '確定を取り消す';
+  } else {
+    el.innerHTML = '　<span style="color:#999">未確定</span>';
+    btn.textContent = 'この月を確定する';
+  }
+}
+function toggleConfirm() {
+  const ym = document.getElementById('sumMonth').value;
+  if (!ym) { alert('対象月を選んでください'); return; }
+  if (confirms[ym]) {
+    if (!confirm(ym + ' の確定を取り消しますか？（また自由に修正できるようになります）')) return;
+    delete confirms[ym];
+  } else {
+    if (!confirm(ym + ' の勤怠を「確定」します。\n確定後に打刻を修正すると警告が出ます。よろしいですか？')) return;
+    confirms[ym] = { at: nowStamp() };
+  }
+  save(LS_CONFIRM, confirms);
+  renderConfirmStatus();
+  syncConfirm();
+}
+function syncConfirm() {
+  if (!syncUrl) return;
+  pushSheet('月次確定', ['対象月','確定日時'], Object.keys(confirms).sort().map(ym => [ym, confirms[ym].at || '']));
+  pushState();
 }
 
 function exportCSV() {
@@ -2028,14 +2085,14 @@ function fullSync() {
   if (!syncUrl) { alert('先にURLを入れて「保存する」を押してください'); return; }
   if (!confirm('今アプリにある全データ（打刻・スタッフ・月集計・売上・シフト・掲示板）をスプレッドシートに送り、グラフも更新します。よろしいですか？')) return;
   // すべてのシートを丸ごと最新にする
-  syncDept(); syncSite(); syncTerm(); syncCommute(); syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
+  syncDept(); syncSite(); syncTerm(); syncCommute(); syncConfirm(); syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
   alert('全データを送りました。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
 }
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, terms, commutes,
+    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, terms, commutes, confirms,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -2054,11 +2111,11 @@ function restoreData(input) {
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
       fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
-      punchEvents = data.punchEvents || []; terms = data.terms || []; commutes = data.commutes || [];
+      punchEvents = data.punchEvents || []; terms = data.terms || []; commutes = data.commutes || []; confirms = data.confirms || {};
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
       save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
       save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents);
-      save(LS_TERM, terms); save(LS_COMMUTE, commutes);
+      save(LS_TERM, terms); save(LS_COMMUTE, commutes); save(LS_CONFIRM, confirms);
       if (punchEvents.length) rebuildRecords();
       renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
       renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
