@@ -580,11 +580,23 @@
         <input type="text" id="offName" placeholder="事業所名" style="width:220px">
         <label style="font-size:14px;color:#555">日付切替時刻</label>
         <input type="time" id="offCut" value="00:00" style="width:110px">
-        <label style="font-size:14px;color:#555">担当者名</label>
-        <input type="text" id="offEditor" placeholder="修正する人の名前" style="width:150px">
         <button onclick="saveOffice()">保存する</button>
       </div>
       <p class="note" style="margin-top:2px;">※ 日付切替時刻：深夜まで営業する場合、この時刻より前の打刻を「前日の勤務」にします（ふつうは 00:00）。事業場マスタに時刻があればそちらが優先されます。</p>
+
+      <h3>修正できる担当者（パスワードつき）</h3>
+      <div class="row-form">
+        <input type="text" id="edName" placeholder="担当者の名前" style="width:180px">
+        <input type="text" id="edPw" placeholder="その人のパスワード" style="width:180px">
+        <button onclick="addEditor()">追加する</button>
+      </div>
+      <div style="overflow-x:auto;"><table id="editorTable"></table></div>
+      <p class="note">
+        ・ここに登録した人だけが「勤怠の修正」をできます。<br>
+        ・修正するとき、<b>自分のパスワードを入れると、その人の名前で記録</b>されます（他人の名前で勝手に修正できません）。<br>
+        ・<b>1人も登録していないと、暗証番号を知っている人は誰でも修正できます</b>（＝限定なし）。限定したいときは必ず登録してください。
+      </p>
+
       <h3>管理画面の暗証番号</h3>
       <div class="row-form">
         <input type="tel" id="pinInput" placeholder="新しい暗証番号（4桁）" style="width:220px" maxlength="4">
@@ -642,6 +654,7 @@ const LS_MIGRATED = 'kintai_migrated_ev';
 const LS_TERM = 'kintai_terms';       // 端末マスタ
 const LS_COMMUTE = 'kintai_commutes'; // 交通費マスタ
 const LS_CONFIRM = 'kintai_confirms'; // 月次確定 {ym:{at}}
+const LS_EDITORS = 'kintai_editors';  // 修正できる担当者 [{name, pw}]
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -662,6 +675,7 @@ let punchEvents = load(LS_EVENTS, []); // 打刻トラン [{id,code,name,type,dt
 let terms     = load(LS_TERM, []);  // 端末マスタ [{id, name, site, active}]
 let commutes  = load(LS_COMMUTE, []); // 交通費マスタ [{code, site, kind, amount, start, end}]
 let confirms  = load(LS_CONFIRM, {}); // 月次確定 {ym:{at}}
+let editors   = load(LS_EDITORS, []); // 修正できる担当者 [{name, pw}]
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMatfVBe8AzS0eMY2hZDruCdsME63hHVuX-O49FuyLptwk2MOpla7kNGbtg/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
@@ -836,7 +850,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, terms, commutes, confirms });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, terms, commutes, confirms, editors });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -858,10 +872,11 @@ function pullState(manual) {
       if (obj.terms)     { terms     = obj.terms;     save(LS_TERM, terms); }
       if (obj.commutes)  { commutes  = obj.commutes;  save(LS_COMMUTE, commutes); }
       if (obj.confirms)  { confirms  = obj.confirms;  save(LS_CONFIRM, confirms); }
+      if (obj.editors)   { editors   = obj.editors;   save(LS_EDITORS, editors); }
       if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
       renderStatus(currentCode);
       if (document.getElementById('adminModal').classList.contains('show')) {
-        renderEmpTable(); renderDept(); renderSite(); renderTerm(); renderCommute();
+        renderEmpTable(); renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
         fillDeptSelect('siteDept'); fillDeptSelect('empDept');
         fillSiteSelect('empSite'); fillSiteSelect('termSite'); fillSiteSelect('cmSite');
         fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
@@ -1277,7 +1292,7 @@ function openAdmin() {
   if (p !== pin) { alert('暗証番号が違います'); return; }
 
   renderEmpTable();
-  renderDept(); renderSite(); renderTerm(); renderCommute();
+  renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
   fillDeptSelect('siteDept'); fillDeptSelect('empDept');
   fillSiteSelect('empSite', '事業場を選ぶ'); fillSiteSelect('termSite', '設置事業場を選ぶ'); fillSiteSelect('cmSite', '事業場を選ぶ');
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
@@ -1290,7 +1305,6 @@ function openAdmin() {
   document.getElementById('offCode').value = office.code;
   document.getElementById('offName').value = office.name;
   document.getElementById('offCut').value = office.cut || '00:00';
-  document.getElementById('offEditor').value = office.editor || '';
   document.getElementById('syncUrlInput').value = syncUrl;
   updateSyncStatus();
   renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
@@ -1687,7 +1701,15 @@ function saveFix() {
   if (confirms[ym] && !confirm('⚠️ ' + ym + ' は「確定済み」の月です。\n修正すると確定した内容が変わります。本当に修正しますか？')) return;
   const emp = findEmp(code);
   const empName = emp ? emp.name : '(削除済み)';
-  const editor = office.editor || '管理者';   // 修正した人（設定の担当者名）
+  // 修正できる担当者が登録されていれば、本人のパスワードで確認
+  let editor = '管理者';
+  if (editors.length) {
+    const pw = prompt('修正するあなたのパスワードを入力してください');
+    if (pw === null) return;
+    const ed = editors.find(e => e.pw === pw.trim());
+    if (!ed) { alert('パスワードが違います。\n勤怠の修正ができるのは、登録された担当者だけです。'); return; }
+    editor = ed.name;
+  }
   let reason = '';                            // 修正の理由（最初の変更時に1回だけ聞く）
   let askedReason = false;
   const n = daysInMonth(ym);
@@ -2078,8 +2100,7 @@ function saveOffice() {
   const code = normalizeCode(document.getElementById('offCode').value) || '999';
   const name = document.getElementById('offName').value.trim() || '本部';
   const cut = document.getElementById('offCut').value || '00:00';
-  const editor = document.getElementById('offEditor').value.trim();
-  office = {code, name, cut, editor};
+  office = {code, name, cut};
   save(LS_OFF, office);
   renderOffice();
   pushState();
@@ -2093,6 +2114,33 @@ function savePin() {
   save(LS_PIN, pin);
   document.getElementById('pinInput').value = '';
   alert('暗証番号を変更しました');
+}
+
+/* ---- 修正できる担当者（パスワード） ---- */
+function renderEditors() {
+  const tbl = document.getElementById('editorTable'); if (!tbl) return;
+  let html = '<tr><th>担当者の名前</th><th style="width:150px">パスワード</th><th style="width:90px"></th></tr>';
+  editors.forEach((e, i) => {
+    html += '<tr><td class="name">' + escapeHtml(e.name) + '</td>'
+      + '<td>' + escapeHtml('●'.repeat((e.pw || '').length)) + '</td>'
+      + '<td><button class="del" onclick="delEditor(' + i + ')">削除</button></td></tr>';
+  });
+  if (!editors.length) html += '<tr><td colspan="3" style="color:#c00">まだ誰も登録されていません（今は誰でも修正できる状態です）</td></tr>';
+  tbl.innerHTML = html;
+}
+function addEditor() {
+  const name = document.getElementById('edName').value.trim();
+  const pw = document.getElementById('edPw').value.trim();
+  if (!name || !pw) { alert('名前とパスワードを両方入れてください'); return; }
+  if (editors.some(e => e.pw === pw)) { alert('そのパスワードは別の人が使っています。別のものにしてください'); return; }
+  editors.push({ name, pw });
+  save(LS_EDITORS, editors);
+  document.getElementById('edName').value = ''; document.getElementById('edPw').value = '';
+  renderEditors(); pushState();
+}
+function delEditor(i) {
+  if (!confirm(editors[i].name + ' さんを、修正できる担当者から外しますか？')) return;
+  editors.splice(i, 1); save(LS_EDITORS, editors); renderEditors(); pushState();
 }
 
 function saveSyncUrl() {
@@ -2124,7 +2172,7 @@ function fullSync() {
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, terms, commutes, confirms,
+    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, terms, commutes, confirms, editors,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -2143,11 +2191,11 @@ function restoreData(input) {
       records = data.records; office = data.office || office;
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
       fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
-      punchEvents = data.punchEvents || []; terms = data.terms || []; commutes = data.commutes || []; confirms = data.confirms || {};
+      punchEvents = data.punchEvents || []; terms = data.terms || []; commutes = data.commutes || []; confirms = data.confirms || {}; editors = data.editors || [];
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
       save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
       save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents);
-      save(LS_TERM, terms); save(LS_COMMUTE, commutes); save(LS_CONFIRM, confirms);
+      save(LS_TERM, terms); save(LS_COMMUTE, commutes); save(LS_CONFIRM, confirms); save(LS_EDITORS, editors);
       if (punchEvents.length) rebuildRecords();
       renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
       renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
