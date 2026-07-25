@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合宿研修旅館 陽だまりの家｜長野県塩尻市</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f7f2e8; --cream-2:#efe7d6; --ink:#332f28; --ink-soft:#655c4e;
+    --amber:#9c7b4f; --amber-deep:#775a34; --terra:#9c5a3c; --sage:#7f9068;
+    --forest:#4f6049; --forest-deep:#374630; --wood:#8a6f52;
+    --line:#e5dccb; --white:#fffdf8;
+    --shadow:0 14px 34px -22px rgba(63,56,47,.26);
+    --serif:'Zen Maru Gothic',sans-serif; --gothic:'Zen Kaku Gothic New',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--gothic);color:var(--ink);background:var(--cream);line-height:1.72;letter-spacing:.01em;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:var(--serif);font-weight:700;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  .photo{background:linear-gradient(135deg,var(--cream-2),#e9dcc4);display:flex;align-items:center;justify-content:center;color:#b6a688;font-size:.78rem;letter-spacing:.08em;border-radius:14px;overflow:hidden}
+  .photo span{background:rgba(255,255,255,.55);padding:6px 14px;border-radius:20px}
+  .photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .room-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px}
+  .room-gallery figure{margin:0;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .room-gallery img{width:100%;height:210px;object-fit:cover;display:block}
+  .room-gallery figcaption{background:var(--white);text-align:center;font-size:.83rem;color:var(--ink-soft);padding:9px}
+
+  /* ヘッダー */
+  header{position:sticky;top:0;z-index:50;background:rgba(250,246,238,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:72px}
+  .logo{font-family:var(--serif);font-size:1.22rem;font-weight:700;letter-spacing:.05em}
+  .logo small{display:block;font-family:var(--gothic);font-size:.6rem;letter-spacing:.28em;color:var(--amber-deep);font-weight:500}
+  .menu{display:flex;gap:18px;align-items:center;font-size:.86rem}
+  .menu a{color:var(--ink-soft);transition:color .2s}
+  .menu a:hover{color:var(--forest)}
+  .nav .book-btn{background:var(--forest);color:#fff;padding:9px 22px;border-radius:30px;font-size:.84rem;font-weight:700;box-shadow:0 6px 16px -8px var(--forest-deep)}
+  .nav .book-btn:hover{color:#fff;background:var(--forest-deep)}
+  .menu-toggle{display:none;font-size:1.5rem;background:none;border:none;color:var(--ink);cursor:pointer}
+
+  /* ヒーロー */
+  .hero-bg{height:72vh;min-height:480px;background:linear-gradient(180deg,rgba(58,45,32,.55),rgba(58,45,32,.3) 45%,rgba(58,45,32,.55)),url('https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/01_%E5%A4%96%E8%A6%B3-scaled.jpg') center/cover no-repeat;display:flex;align-items:center}
+  .hero-inner{max-width:1080px;margin:0 auto;padding:0 32px;width:100%}
+  .hero .tag{display:inline-block;background:rgba(255,255,255,.85);color:var(--terra);font-size:.78rem;letter-spacing:.18em;padding:7px 18px;border-radius:30px;font-weight:700;margin-bottom:24px}
+  .hero h1{font-size:clamp(2rem,5vw,3.6rem);color:#fff;font-weight:500;text-shadow:0 1px 24px rgba(30,22,10,.4);letter-spacing:.06em;line-height:1.55}
+  .hero h1 .accent{color:#fff6e6}
+  .hero p{color:#fff;font-size:clamp(1rem,2vw,1.18rem);margin-top:20px;max-width:540px;text-shadow:0 2px 12px rgba(74,50,20,.4);font-weight:500}
+  .hero-cta{margin-top:36px;display:flex;gap:14px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 30px;border-radius:34px;font-weight:700;font-size:.95rem;transition:transform .2s,box-shadow .2s}
+  .btn-primary{background:#fff;color:var(--terra);box-shadow:var(--shadow)}
+  .btn-ghost{background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.7)}
+  .btn-amber{background:var(--amber);color:#fff;box-shadow:0 10px 24px -10px var(--amber-deep)}
+  .btn:hover{transform:translateY(-2px)}
+
+  section{scroll-margin-top:80px}
+  .section-head{text-align:center;margin-bottom:32px}
+  .section-head .en{display:block;font-size:.68rem;letter-spacing:.4em;color:var(--forest);font-weight:600;margin-bottom:14px}
+  .section-head h2{font-size:clamp(1.6rem,3.5vw,2.2rem);color:var(--ink)}
+  .section-head p{color:var(--ink-soft);margin-top:14px;font-size:.98rem}
+  .divider{width:40px;height:2px;background:var(--forest);border-radius:2px;margin:0 auto 20px}
+
+  /* コンセプト */
+  .concept{padding:56px 0;text-align:center}
+  .concept .lead{font-family:var(--serif);font-size:clamp(1.35rem,3vw,1.95rem);color:var(--ink);line-height:1.6}
+  .concept .lead b{color:var(--amber-deep);font-weight:700}
+  .concept .sub{color:var(--ink-soft);margin-top:16px;font-size:.98rem;line-height:1.85;max-width:640px;margin-left:auto;margin-right:auto}
+
+  /* 7つの理由 */
+  .reasons{background:var(--cream-2);padding:60px 0}
+  .reason-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .reason-card{position:relative;background:var(--white);border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease}
+  .reason-card:hover{transform:translateY(-3px);box-shadow:0 22px 42px -24px rgba(63,56,47,.42)}
+  .reason-card .rphoto{position:relative;height:192px;overflow:hidden;background:var(--cream-2)}
+  .reason-card .rphoto img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s ease}
+  .reason-card:hover .rphoto img{transform:scale(1.045)}
+  .reason-card .rno{position:absolute;top:12px;right:16px;font-family:var(--serif);font-size:1.7rem;font-weight:700;color:#fff;line-height:1;z-index:2;text-shadow:0 2px 10px rgba(30,22,10,.55)}
+  .reason-card .rbody{padding:24px 24px 26px}
+  .reason-card h3{font-size:1.2rem;margin-bottom:12px;padding-bottom:12px;color:var(--ink);position:relative}
+  .reason-card h3::after{content:"";position:absolute;left:0;bottom:0;width:28px;height:2px;background:var(--sage);border-radius:2px}
+  .reason-card p{font-size:.9rem;color:var(--ink-soft);line-height:1.85}
+
+  /* 施設・お部屋 */
+  .rooms{padding:60px 0}
+  .bldg{margin-bottom:40px}
+  .bldg-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .bldg-head h3{font-size:1.4rem;color:var(--ink)}
+  .bldg-head .en{font-size:.66rem;letter-spacing:.28em;color:var(--amber-deep);font-weight:700}
+  .room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .room{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .room .rname{font-family:var(--serif);font-size:1.15rem;color:var(--ink);margin-bottom:6px}
+  .room .rmeta{font-size:.86rem;color:var(--ink-soft)}
+  .room .cap{display:inline-block;margin-top:10px;background:var(--cream-2);color:var(--amber-deep);font-size:.78rem;font-weight:700;padding:4px 12px;border-radius:20px}
+  .room.staff{background:var(--cream-2);opacity:.85}
+  .room.staff .cap{background:#e3d7c2;color:var(--ink-soft)}
+  .room.big{border:1.5px solid var(--amber);background:linear-gradient(180deg,#fff,#fff8ec)}
+  .fac-note{background:var(--cream-2);border-radius:14px;padding:22px 26px;margin-top:26px;font-size:.92rem;color:var(--ink-soft)}
+  .fac-note b{color:var(--ink)}
+  .equip{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{background:var(--cream-2);color:var(--ink-soft);font-size:.8rem;padding:6px 14px;border-radius:20px}
+
+  /* 館内図（間取り図・白いグリッド） */
+  .floor{margin-bottom:34px}
+  .floor .bhead{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;justify-content:center}
+  .floor .bhead h3{font-size:1.3rem;color:var(--ink)}
+  .floor .bhead .en{font-size:.64rem;letter-spacing:.26em;color:var(--amber-deep);font-weight:700}
+  .fp-label{font-size:.74rem;letter-spacing:.12em;color:var(--forest);font-weight:700;margin:16px 0 7px;padding-left:7px;border-left:3px solid var(--forest)}
+  .fp{border:1.5px solid #c9b48f;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 12px 26px -18px rgba(74,63,53,.45)}
+  .fp-row{display:flex}
+  .fp-row+.fp-row{border-top:1px solid #ddceb2}
+  .fp-cell{flex:1 1 0;min-width:0;border-right:1px solid #ddceb2;padding:16px 7px;text-align:center;min-height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.35}
+  .fp-cell:last-child{border-right:none}
+  .fp-cell .jo{font-size:.7rem;color:var(--ink-soft);margin-bottom:4px;letter-spacing:.04em}
+  .fp-cell .nm{font-family:var(--serif);font-size:1.1rem;color:var(--ink);font-weight:500}
+  .fp-cell .cap{font-size:.72rem;color:var(--amber-deep);font-weight:700;margin-top:4px}
+  .fp-cell.fac{flex:0 0 60px;background:#f3eee2;color:#a99b84}
+  .fp-cell.fac .nm{font-size:.74rem;color:#a99b84;font-weight:400}
+  .fp-cell.staff{background:#ece3d2}
+  .fp-cell.staff .nm{color:#9a8d78}
+  .fp-cell.staff .cap{color:#b58a6a;font-weight:500}
+  .fp-cell.util{background:#f5efe2}
+  .fp-cell.util .nm{color:#7d7160;font-weight:500;font-size:.92rem}
+  .fp-cell.util .cap{color:#a99b84;font-weight:500}
+  .fp-cell.dorm{flex:1.7 1 0;background:linear-gradient(180deg,#fff9ee,#ffefd2)}
+  .fp-cell.dorm .nm{font-weight:700;color:var(--amber-deep);font-size:1.05rem}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:.8rem;color:var(--ink-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:15px;height:15px;border-radius:4px;display:inline-block;border:1px solid #c9b48f}
+  .room-table-wrap{margin-top:30px;display:flex;flex-direction:column;align-items:center}
+  .room-table-wrap h3{font-size:1.15rem;color:var(--ink);margin-bottom:16px;text-align:center}
+  .room-table{width:100%;max-width:560px;border-collapse:collapse;font-size:.96rem;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .room-table th{background:var(--forest);color:#fff;padding:15px 20px;text-align:center;font-weight:700;letter-spacing:.03em}
+  .room-table th:first-child{text-align:left}
+  .room-table td{padding:15px 20px;border-top:1px solid var(--line);color:var(--ink)}
+  .room-table tr:nth-child(even) td{background:#f6efe1}
+  .room-table tr:nth-child(odd) td{background:var(--white)}
+  .room-table td:first-child{font-family:var(--serif);font-weight:500;text-align:left;font-size:1.02rem}
+  .room-table td.c{text-align:center;font-variant-numeric:tabular-nums;color:var(--amber-deep);font-weight:700}
+
+  /* アコーディオン（タップで詳細） */
+  .acc{background:var(--white);border:1px solid var(--line);border-radius:14px;margin-bottom:13px;overflow:hidden;box-shadow:0 8px 22px -20px rgba(74,63,53,.4)}
+  .acc>summary{list-style:none;cursor:pointer;padding:18px 22px;font-family:var(--serif);font-size:1.12rem;color:var(--ink);display:flex;align-items:center;justify-content:flex-start;gap:14px;font-weight:500}
+  .acc>summary::-webkit-details-marker{display:none}
+  .acc>summary .s-ic{width:38px;height:38px;border-radius:50%;background:#eef1e6;color:var(--forest);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .acc>summary .s-ic svg{width:21px;height:21px}
+  .acc>summary .s-tt{display:flex;flex-direction:column;line-height:1.3}
+  .acc>summary .s-tt em{font-style:normal;font-family:var(--gothic);font-size:.75rem;color:var(--ink-soft);font-weight:400;margin-top:3px;letter-spacing:.02em}
+  .acc>summary .sm{font-family:var(--gothic);font-size:.76rem;color:var(--ink-soft);font-weight:400;margin-left:auto;margin-right:6px}
+  .acc>summary::after{content:"＋";color:var(--forest);font-size:1.3rem;font-weight:700;flex-shrink:0;line-height:1;margin-left:auto}
+  .acc.static>summary{pointer-events:none;cursor:default}
+  .acc.static>summary::after{content:none}
+  .acc[open]>summary::after{content:"−"}
+  .acc[open]>summary{border-bottom:1px solid var(--line);background:#fdf8f0}
+  .acc-body{padding:4px 22px 24px}
+  .acc-body h3{font-size:1.05rem;color:var(--ink);margin:24px 0 2px;font-family:var(--serif);font-weight:500}
+  .acc-body>h3:first-child,.acc-body>table:first-child{margin-top:8px}
+  .acc-body h3 .sub{font-size:.76rem;color:var(--ink-soft);font-weight:400;font-family:var(--gothic)}
+  /* 表は内容ぶんの幅に収めて、品名と価格を近づける（見やすく） */
+  .acc-body table{width:auto;max-width:100%}
+  .acc-body td.r,.acc-body th.r{padding-left:56px}
+  .sell-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .sell-chips span{background:#fdf0dc;color:var(--amber-deep);border:1px solid #efd9bd;border-radius:24px;padding:9px 20px;font-weight:700;font-size:.92rem}
+  /* 料金カード（表のかわり） */
+  .pcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:16px}
+  .pcard{background:linear-gradient(180deg,#fffdf7,#f4efe2);border:1px solid var(--line);border-radius:16px;padding:22px 16px;text-align:center;box-shadow:var(--shadow)}
+  .pcard .lbl{font-size:.9rem;color:var(--ink-soft);margin-bottom:10px}
+  .pcard .val{font-family:var(--serif);font-size:1.55rem;color:var(--amber-deep);font-weight:700;line-height:1.2}
+  .pcard .val small{font-size:.72rem;color:var(--ink-soft);font-weight:500;letter-spacing:0}
+  .amen{margin-top:16px;border:1px solid #efdcc0;border-radius:14px;overflow:hidden;box-shadow:0 12px 26px -22px rgba(176,118,47,.5)}
+  .amen-row{display:flex;gap:18px;padding:16px 22px;font-size:.94rem}
+  .amen-row+.amen-row{border-top:1px solid #f1e3cd}
+  .amen-row:nth-child(odd){background:#fffdf8}
+  .amen-row:nth-child(even){background:#fdf4e6}
+  .amen-row .k{width:150px;flex-shrink:0;font-weight:700;color:var(--forest)}
+  .amen-row .k small{font-weight:400;color:var(--ink-soft);font-size:.76rem}
+  .amen-row .v{color:var(--ink)}
+  @media(max-width:560px){.amen-row{flex-direction:column;gap:4px}.amen-row .k{width:auto}}
+
+  /* 料金 */
+  .price{background:var(--cream-2);padding:60px 0}
+  .price-block{background:var(--white);border-radius:16px;padding:30px 30px;box-shadow:var(--shadow);margin-bottom:24px}
+  .price-block h3{font-size:1.25rem;color:var(--ink);margin-bottom:6px}
+  .price-block h3 .sub{font-size:.78rem;color:var(--ink-soft);font-weight:400;font-family:var(--gothic)}
+  table{width:100%;border-collapse:collapse;margin-top:16px;font-size:.94rem;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  th{background:var(--forest);color:#fff;font-weight:700;font-size:.9rem;padding:15px 20px;text-align:left;letter-spacing:.03em}
+  td{padding:14px 20px;text-align:left;border-top:1px solid var(--line);color:var(--ink)}
+  tr:nth-child(odd) td{background:var(--white)}
+  tr:nth-child(even) td{background:#f6efe1}
+  td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+  .note{font-size:.88rem;color:var(--ink-soft);margin-top:12px;line-height:1.8}
+  .tax-badge{display:inline-block;background:var(--sage);color:#fff;font-size:.8rem;font-weight:700;padding:5px 14px;border-radius:20px;margin-top:12px}
+  .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+  .opt{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-align:center}
+  .opt .oname{font-size:.9rem;color:var(--ink)}
+  .opt .oprice{font-family:var(--serif);font-size:1.3rem;color:var(--amber-deep);font-weight:700;margin-top:4px}
+  .amenity-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px}
+  .amenity-cols .col h4{font-size:.9rem;margin-bottom:8px;color:var(--ink)}
+  .amenity-cols ul{list-style:none;font-size:.9rem;color:var(--ink-soft)}
+  .amenity-cols li{padding:3px 0}
+  .amenity-cols li::before{content:"・"}
+
+  /* プラン */
+  .plans{padding:60px 0}
+  .plan-hero{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:28px 30px;box-shadow:var(--shadow);margin-bottom:34px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .plan-hero .photo{width:220px;height:130px;flex-shrink:0}
+  .plan-hero h3{font-size:1.3rem;color:var(--ink);margin-bottom:8px}
+  .plan-hero p{font-size:.92rem;color:var(--ink-soft)}
+  .plan-hero .badge{display:inline-block;background:var(--terra);color:#fff;font-size:.74rem;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:10px}
+  .inaka{background:linear-gradient(180deg,#f2f5ea,#e8efd8);border-radius:18px;padding:34px 32px;border:1px solid #dfe6cd}
+  .inaka .head{text-align:center;margin-bottom:26px}
+  .inaka .head .badge{background:var(--sage);color:#fff;font-size:.76rem;font-weight:700;padding:5px 16px;border-radius:20px;display:inline-block;margin-bottom:12px}
+  .inaka .head h3{font-size:1.7rem;color:#4a5535}
+  .inaka .head p{color:#5f6b48;margin-top:10px;font-size:.95rem}
+  .sched-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .sched{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 12px 26px -16px rgba(74,85,53,.4)}
+  .sched .photo{height:120px;border-radius:0}
+  .sched .body{padding:16px 16px 20px}
+  .sched .no{width:24px;height:24px;border-radius:50%;background:var(--sage);color:#fff;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .sched h4{font-family:var(--serif);font-size:1.02rem;color:#4a5535;margin-bottom:4px;line-height:1.4}
+  .sched .date{font-size:.82rem;color:var(--terra);font-weight:700;margin-bottom:8px}
+  .sched p{font-size:.8rem;color:var(--ink-soft)}
+  .inaka .detail{background:#fff;border-radius:12px;padding:20px 24px;margin-top:24px;font-size:.9rem;color:var(--ink-soft)}
+  .inaka .detail b{color:var(--ink)}
+  .inaka .detail .row{display:flex;gap:12px;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .inaka .detail .row .k{width:70px;flex-shrink:0;color:var(--sage);font-weight:700}
+  .soon{text-align:center;color:#7a8560;font-size:.85rem;margin-top:16px}
+
+  /* アクセス */
+  .access{background:var(--cream-2);padding:60px 0;text-align:center}
+  .access .addr{color:var(--ink-soft)}
+  .access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px;margin-top:38px}
+  .access-item{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:26px 18px}
+  .access-item .aicon{width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:#eef1e6;color:var(--forest);display:flex;align-items:center;justify-content:center}
+  .access-item .aicon svg{width:26px;height:26px}
+  .access-item .from{font-size:.82rem;color:var(--amber-deep);font-weight:700;margin-bottom:6px}
+  .access-item .time{font-family:var(--serif);font-size:1.4rem;color:var(--ink)}
+  .access-item .via{font-size:.78rem;color:var(--ink-soft);margin-top:4px}
+  .access-map{max-width:900px;margin:40px auto 0;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .access-map iframe{width:100%;height:360px;border:0;display:block}
+
+  /* お知らせ */
+  .news{padding:60px 0}
+  .news-list{max-width:760px;margin:0 auto}
+  .news-item{display:flex;gap:20px;padding:18px 0;border-bottom:1px solid var(--line);align-items:baseline}
+  .news-item .date{font-size:.82rem;color:var(--ink-soft);width:110px;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .news-item .ttl{font-size:.96rem;color:var(--ink)}
+
+  /* 予約 */
+  .book{background:linear-gradient(180deg,var(--forest),var(--forest-deep));padding:88px 0;text-align:center;color:#fff}
+  .book h2{font-size:clamp(1.7rem,4vw,2.4rem);text-shadow:0 2px 14px rgba(74,50,20,.3)}
+  .book p{margin:16px 0 30px;font-size:1.03rem;opacity:.96}
+  .book .btn-primary{color:var(--terra);font-size:1.05rem;padding:16px 40px}
+  .book .tel-big{font-family:var(--serif);font-size:1.6rem;font-weight:700;margin-top:24px}
+  .book .tel-big small{font-size:.84rem;font-weight:500;opacity:.9;display:block}
+  .form-frame{max-width:820px;margin:34px auto 0;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 50px -20px rgba(74,50,20,.5)}
+  .form-frame iframe{width:100%;height:640px;border:0;display:block;background:#fff}
+
+  /* お問い合わせフォーム */
+  .contact{padding:60px 0;background:var(--cream-2)}
+  .cform{max-width:640px;margin:0 auto;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:36px 36px 40px;box-shadow:var(--shadow)}
+  .cform .fld{margin-bottom:20px}
+  .cform label{display:block;font-size:.9rem;font-weight:700;color:var(--ink);margin-bottom:7px}
+  .cform label .req{color:#fff;background:var(--terra);font-size:.68rem;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:700}
+  .cform input,.cform select,.cform textarea{width:100%;font-family:var(--gothic);font-size:1rem;color:var(--ink);background:#fbf8f1;border:1.5px solid var(--line);border-radius:12px;padding:13px 16px;transition:border-color .2s}
+  .cform input:focus,.cform select:focus,.cform textarea:focus{outline:none;border-color:var(--forest);background:#fff}
+  .cform textarea{min-height:130px;resize:vertical;line-height:1.7}
+  .cform .submit{width:100%;background:var(--forest);color:#fff;border:none;border-radius:30px;padding:16px;font-size:1.02rem;font-weight:700;font-family:var(--gothic);cursor:pointer;margin-top:8px;box-shadow:0 12px 24px -12px var(--forest-deep);transition:background .2s}
+  .cform .submit:hover{background:var(--forest-deep)}
+  .cform .privacy{font-size:.8rem;color:var(--ink-soft);text-align:center;margin-top:16px;line-height:1.8}
+
+  /* 詳細モーダル（タップで開く） */
+  .card-more{display:inline-block;margin-top:14px;font-size:.82rem;color:var(--forest);font-weight:700;letter-spacing:.02em}
+  .card-more::after{content:" ＞"}
+  a.sched,a.plan-hero{text-decoration:none;color:inherit;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  a.sched:hover,a.plan-hero:hover{transform:translateY(-4px);box-shadow:0 20px 40px -22px rgba(63,56,47,.5)}
+  .pmodal{position:fixed;inset:0;z-index:1000;display:none;align-items:flex-start;justify-content:center;background:rgba(40,33,25,.62);overflow-y:auto;padding:40px 16px}
+  .pmodal:target{display:flex}
+  .pm-backdrop{position:absolute;inset:0;z-index:1}
+  .pmodal-box{background:var(--cream);max-width:700px;width:100%;border-radius:8px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.55);position:relative;margin:auto;z-index:2}
+  .pmodal-box .pm-img{width:100%;height:280px;object-fit:cover;display:block}
+  .pm-close{position:absolute;top:14px;right:16px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.4rem;text-decoration:none;box-shadow:0 4px 12px rgba(0,0,0,.25);z-index:3;line-height:1}
+  .pm-body{padding:34px 40px 44px}
+  .pm-badge{display:inline-block;background:var(--forest);color:#fff;font-size:.72rem;font-weight:700;padding:5px 15px;border-radius:20px;margin-bottom:14px;letter-spacing:.05em}
+  .pm-body h2{font-size:1.55rem;color:var(--ink);margin-bottom:6px;line-height:1.5}
+  .pm-date{color:var(--terra);font-weight:700;margin-bottom:18px}
+  .pm-body h3{font-size:1.08rem;color:var(--forest);border-bottom:2px solid var(--forest);padding-bottom:8px;margin:26px 0 12px;font-family:var(--serif);font-weight:500}
+  .pm-body p{color:var(--ink-soft);margin-bottom:12px;font-size:.95rem;line-height:1.95}
+  .pm-info{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 22px;margin-top:20px;font-size:.9rem}
+  .pm-info .row{display:flex;gap:14px;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .pm-info .row:last-child{border-bottom:none}
+  .pm-info .k{width:70px;flex-shrink:0;color:var(--forest);font-weight:700}
+  .pm-info .v{color:var(--ink-soft)}
+
+  /* フッター */
+  footer{background:var(--ink);color:#d9ccbb;padding:56px 0 30px;font-size:.88rem}
+  .foot-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px;margin-bottom:36px}
+  .foot-logo{font-family:var(--serif);font-size:1.3rem;color:#fff;margin-bottom:10px}
+  .foot-col h4{color:#fff;font-size:.85rem;margin-bottom:14px;letter-spacing:.1em}
+  .foot-col a{display:block;color:#c3b4a2;margin-bottom:8px;transition:color .2s}
+  .foot-col a:hover{color:var(--amber)}
+  .company{font-size:.8rem;color:#b2a390;line-height:1.8}
+  .foot-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:22px;text-align:center;color:#a99b89;font-size:.78rem}
+
+  @media(max-width:820px){
+    .menu{display:none}
+    .menu-toggle{display:block}
+    .reason-grid{grid-template-columns:1fr}
+    .sched-grid{grid-template-columns:1fr 1fr}
+    .opt-grid{grid-template-columns:1fr}
+    .amenity-cols{grid-template-columns:1fr}
+    .fp{overflow-x:auto}
+    .fp-row{min-width:540px}
+    .fp-cell .nm{font-size:.92rem}
+    .pmodal{padding:0}
+    .pmodal-box{border-radius:0;min-height:100%}
+    .pm-body{padding:26px 22px 40px}
+    .pmodal-box .pm-img{height:210px}
+    .hero-bg{height:auto;min-height:0;padding:110px 0 90px}
+    .plan-hero .photo{width:100%}
+  }
+
+  /* 施設切り替えタブ */
+  .facility-tabs{position:sticky;top:72px;z-index:40;background:rgba(250,246,238,.96);backdrop-filter:blur(8px);padding:13px 0;border-bottom:1px solid var(--line);text-align:center}
+  .facility-tabs .ft{display:inline-flex;gap:6px;background:var(--white);border:1px solid var(--line);border-radius:40px;padding:5px}
+  .facility-tabs button{border:none;background:none;font-family:var(--serif);font-size:.98rem;font-weight:700;color:var(--ink-soft);padding:9px 24px;border-radius:30px;cursor:pointer;transition:background .2s,color .2s;white-space:nowrap}
+  .facility-tabs button.active{background:var(--forest);color:#fff}
+  @media(max-width:560px){.facility-tabs button{padding:9px 15px;font-size:.85rem}}
+  @media(max-width:640px){
+    .room-gallery{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:26px}
+    .room-gallery img{height:150px}
+  }
+  .enrei-map{margin:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+  .enrei-map img{width:100%;display:block}
+
+  .menu a[data-page].active{color:var(--forest)}
+  .menu a[data-page]{cursor:pointer}
+  .menu a.nav-cta{background:var(--forest);color:#fff;padding:9px 20px;border-radius:30px;font-weight:700;box-shadow:0 6px 16px -8px var(--forest-deep);margin-left:4px;transition:background .2s,color .2s}
+  .menu a.nav-cta:hover{background:var(--forest-deep);color:#fff}
+  .menu a.nav-cta.active{color:#fff}
+  .menu a.nav-cta.ghost{background:transparent;color:var(--forest);border:1.5px solid var(--forest);box-shadow:none;padding:7.5px 18px}
+  .menu a.nav-cta.ghost:hover,.menu a.nav-cta.ghost.active{background:var(--forest);color:#fff}
+  @media(max-width:820px){
+    header.open .menu{display:flex;flex-direction:column;align-items:stretch;position:absolute;top:72px;left:0;right:0;background:var(--cream);border-bottom:1px solid var(--line);padding:14px 24px 22px;gap:6px;box-shadow:0 12px 22px -12px rgba(63,56,47,.4);max-height:calc(100vh - 72px);overflow-y:auto}
+    header.open .menu>a{text-align:left;padding:9px 2px}
+    header.open .menu>a.nav-cta{text-align:center;padding:13px;margin-top:8px}
+  }
+
+  /* ドロップダウンメニュー */
+  .menu .has-drop{position:relative;display:inline-flex;align-items:center}
+  .menu .drop-label{cursor:pointer;color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px;transition:color .2s}
+  .menu .drop-label i{font-style:normal;font-size:.7rem;transition:transform .2s}
+  .menu .has-drop:hover .drop-label{color:var(--forest)}
+  .menu .has-drop:hover .drop-label i{transform:rotate(180deg)}
+  .menu .has-drop::after{content:"";position:absolute;top:100%;left:0;right:0;height:16px}
+  .menu .drop{position:absolute;top:calc(100% + 12px);left:50%;transform:translateX(-50%) translateY(-6px);background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -18px rgba(63,56,47,.45);padding:8px;min-width:230px;opacity:0;visibility:hidden;transition:opacity .18s ease,transform .18s ease;z-index:60}
+  .menu .has-drop:hover .drop{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  .menu .drop a{display:block;padding:12px 18px;border-radius:10px;color:var(--ink);font-size:.9rem;text-align:center;transition:background .15s,color .15s}
+  .menu .drop a:hover{background:var(--cream-2);color:var(--forest)}
+  @media(max-width:820px){
+    header.open .menu .has-drop{width:100%;display:block}
+    header.open .menu .drop{position:static;transform:none;opacity:1;visibility:visible;box-shadow:none;border:none;padding:0;margin:8px 0 4px;min-width:0;background:transparent}
+    header.open .menu .drop a{text-align:left;padding:8px 14px;color:var(--ink-soft)}
+    header.open .menu .drop-label{font-weight:700;color:var(--forest)}
+    header.open .menu .has-drop::after{display:none}
+  }
+
+  /* 当社の取組み */
+  .tori-h{font-family:var(--serif);font-weight:500;font-size:1.12rem;color:var(--ink);margin:28px 0 2px;text-align:center}
+  .tori{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:16px}
+  .tori .item{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow)}
+  .tori .item h4{font-family:var(--serif);font-size:1.02rem;color:var(--ink);margin-bottom:9px;display:flex;align-items:center;gap:9px;line-height:1.4}
+  .tori .item h4 .n{width:26px;height:26px;border-radius:50%;background:var(--sage);color:#fff;font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .tori .item p{font-size:.9rem;color:var(--ink-soft);line-height:1.8}
+
+  .tori .item{position:relative}
+  .tori .item .tic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+  .tori .item .tic svg{width:24px;height:24px}
+  .sdg-bar{display:flex;height:9px;border-radius:6px;overflow:hidden;max-width:560px;margin:0 auto 6px}
+  .sdg-bar span{flex:1}
+
+  /* ホーム紹介ブロック */
+  .home-intro{padding:64px 0}
+  .intro-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  .intro-photo{border-radius:18px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .intro-photo img{width:100%;height:100%;object-fit:cover;display:block;min-height:360px}
+  .intro-text h2{font-size:clamp(1.55rem,3.2vw,2.15rem);color:var(--ink);line-height:1.5}
+  .intro-text .divider{margin:16px 0 22px}
+  .intro-text p{color:var(--ink-soft);margin-bottom:16px;font-size:.97rem;line-height:1.95}
+  .intro-cta{display:flex;flex-direction:column;gap:14px;margin-top:26px;max-width:440px}
+  .intro-cta .btn{width:100%;justify-content:space-between;padding:16px 28px;font-size:1.02rem}
+  @media(max-width:820px){.intro-grid{grid-template-columns:1fr;gap:26px}.intro-photo img{min-height:230px}}
+
+  /* SNS */
+  .sns{padding:64px 0;text-align:center;background:var(--cream-2)}
+  .sns-row{display:flex;justify-content:center;gap:18px;margin:6px 0}
+  .sns-ic{width:58px;height:58px;display:inline-block;transition:transform .2s}
+  .sns-ic:hover{transform:translateY(-3px)}
+  .sns-ic svg{width:100%;height:100%;display:block;border-radius:14px;box-shadow:0 8px 18px -8px rgba(40,30,15,.4)}
+  .sns-sub{margin-top:34px;color:var(--ink);font-weight:700;font-size:1.02rem}
+  .sns-personal{margin-top:34px;color:var(--forest);font-weight:700;font-size:1.02rem}
+  .sns-btns{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:16px}
+  .sns-btn{display:inline-flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:14px 30px;color:var(--ink);font-weight:700;background:var(--white);transition:border-color .2s,transform .2s}
+  .sns-btn:hover{border-color:var(--forest);transform:translateY(-2px)}
+  .sns-btn svg{width:22px;height:22px}
+  @media(max-width:560px){.sns-btns{flex-direction:column;align-items:center}}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header>
+  <div class="wrap nav">
+    <div class="logo">陽だまりの家<small>HIDAMARI NO IE</small></div>
+    <nav class="menu">
+      <a href="#" data-page="home" class="active">ホーム</a>
+      <div class="has-drop">
+        <a href="#" class="drop-label" data-page="shisetsu">施設情報 <i>▾</i></a>
+        <div class="drop">
+          <a href="#" data-page="shisetsu" data-scroll="concept">陽だまりの家の想い</a>
+          <a href="#" data-page="shisetsu" data-scroll="reasons">選ばれる7つの理由</a>
+          <a href="#" data-page="shisetsu" data-scroll="rooms">施設・お部屋</a>
+          <a href="#" data-page="shisetsu" data-scroll="price">ご利用料金</a>
+        </div>
+      </div>
+      <a href="#" data-page="plan">研修・合宿プラン</a>
+      <div class="has-drop">
+        <a href="#" class="drop-label" data-page="torikumi">当社の取組み <i>▾</i></a>
+        <div class="drop">
+          <a href="#" data-page="torikumi" data-scroll="sdgs">SDGsへの取組み</a>
+          <a href="#" data-page="torikumi" data-scroll="wellbeing">健康経営への取組み</a>
+          <a href="#" data-page="torikumi" data-scroll="dx">DX推進の取組み</a>
+        </div>
+      </div>
+      <a href="#" data-page="access">アクセス</a>
+      <a href="#" data-page="enrei">塩嶺体験学習の家</a>
+      <a href="#" data-page="yoyaku" class="nav-cta">ご予約</a>
+      <a href="#" data-page="contact" class="nav-cta ghost">お問い合わせ</a>
+    </nav>
+    <button class="menu-toggle" aria-label="メニュー">☰</button>
+  </div>
+</header>
+
+<!-- ヒーロー -->
+<section class="hero" data-page="home">
+  <div class="hero-bg">
+    <div class="hero-inner">
+      <span class="tag">長野県塩尻市・合宿研修旅館</span>
+      <h1>陽だまりみたいに、<br><span class="accent">皆が自然と集まってくる。</span></h1>
+      <p>気づく、つながる、第二の家。<br>研修も、合宿も、田舎暮らし体験も。信州の自然のなかで、心がほどける時間を。</p>
+      <div class="hero-cta">
+        <a href="#" data-page="yoyaku" class="btn btn-primary">ご予約・お問い合わせ</a>
+        <a href="#" data-page="shisetsu" data-scroll="rooms" class="btn btn-ghost">施設・お部屋を見る</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ホーム紹介 -->
+<section class="home-intro" data-page="home">
+  <div class="wrap intro-grid">
+    <div class="intro-photo"><img src="写真/r02_access.jpg" alt="合宿研修旅館 陽だまりの家 外観・看板"></div>
+    <div class="intro-text">
+      <h2>気づく、つながる、第二の家</h2>
+      <div class="divider" style="margin-left:0"></div>
+      <p>陽だまりの家は、合宿研修や農業体験を目的とした宿泊施設です。自然農塾やビジネス研修など、魅力的なプログラムをご用意しております。</p>
+      <p>新宿から特急で2時間30分、名古屋から2時間、塩尻駅から車で12分。長野自動車道 塩尻ICより6分の好アクセス。80畳（スクール形式70席／シアター形式120席）の大会議室、40畳の中会議室を有し、音響・ホワイトボード・プロジェクター・プリンター等を完備。20畳のキッズルームもございます。本館・別館の2棟に分かれているので、修学旅行の男女別棟泊や、音楽団体の練習棟・宿泊棟などにも最適です。</p>
+      <div class="intro-cta">
+        <a href="#" data-page="shisetsu" class="btn btn-amber">施設概要を見る <span>→</span></a>
+        <a href="#" data-page="plan" class="btn btn-amber">プランを見る <span>→</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SNS -->
+<section class="sns" data-page="home">
+  <div class="wrap">
+    <div class="section-head"><span class="en">SNS</span><h2>SNS</h2>
+      <p>陽だまりの家での日常の風景を発信しています。</p></div>
+    <div class="sns-row">
+      <a href="https://www.facebook.com/532523840187081" target="_blank" rel="noopener" class="sns-ic" aria-label="陽だまりの家 Facebook"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5.5" fill="#1877F2"/><path fill="#fff" d="M15.4 12.5h-2v7H11v-7H9.6v-2.1H11V9.1c0-1.7.8-2.7 2.8-2.7h1.7v2.1h-1.1c-.8 0-.9.3-.9.9v1H15.6l-.2 2.1Z"/></svg></a>
+      <a href="https://www.instagram.com/explore/locations/931046662/" target="_blank" rel="noopener" class="sns-ic" aria-label="陽だまりの家 Instagram"><svg viewBox="0 0 24 24"><defs><linearGradient id="igA" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".35" stop-color="#fa7e1e"/><stop offset=".65" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect width="24" height="24" rx="5.5" fill="url(#igA)"/><rect x="6.5" y="6.5" width="11" height="11" rx="3.4" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="2.9" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="15.8" cy="8.2" r=".95" fill="#fff"/></svg></a>
+    </div>
+    <p class="sns-personal">個人アカウントはこちら</p>
+    <div class="sns-btns">
+      <a href="https://www.facebook.com/hiroshi.murakami.77" target="_blank" rel="noopener" class="sns-btn"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5.5" fill="#1877F2"/><path fill="#fff" d="M15.4 12.5h-2v7H11v-7H9.6v-2.1H11V9.1c0-1.7.8-2.7 2.8-2.7h1.7v2.1h-1.1c-.8 0-.9.3-.9.9v1H15.6l-.2 2.1Z"/></svg>村上 博志</a>
+      <a href="https://www.facebook.com/haruna.masuta" target="_blank" rel="noopener" class="sns-btn"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5.5" fill="#1877F2"/><path fill="#fff" d="M15.4 12.5h-2v7H11v-7H9.6v-2.1H11V9.1c0-1.7.8-2.7 2.8-2.7h1.7v2.1h-1.1c-.8 0-.9.3-.9.9v1H15.6l-.2 2.1Z"/></svg>村上 春菜</a>
+    </div>
+  </div>
+</section>
+
+<!-- コンセプト -->
+<section class="concept" id="concept" data-page="shisetsu">
+  <div class="wrap">
+    <div class="divider"></div>
+    <p class="lead">ただ泊まる場所じゃなく、<br><b>人と人が、自然とつながる場所</b>でありたい。</p>
+    <p class="sub">
+      「この子にとっていい環境で子育てしたい」——そんな想いから始まった陽だまりの家。
+      エネルギーと食の自給自足を目指し、セミナー・野菜づくり・料理・人とのつながりを、まるごとひとつの場所で。
+      心がぽかぽかするような“第二の我が家”として、たくさんの人を迎えています。
+    </p>
+  </div>
+</section>
+
+<!-- 選ばれる7つの理由 -->
+<section class="reasons" id="reasons" data-page="shisetsu">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">7 REASONS</span>
+      <h2>選ばれる7つの理由</h2>
+    </div>
+    <div class="reason-grid">
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r01_kenshu.jpg" alt="研修室での合宿の集合写真">
+          <span class="rno">01</span>
+        </div>
+        <div class="rbody">
+          <h3>研修・合宿に特化</h3>
+          <p>80畳の大会議室（スクール70席／シアター120席）と40畳の中会議室。音響・ホワイトボード・プロジェクター・プリンター完備で、多様な研修形式に対応します。</p>
+        </div>
+      </div>
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r02_access.jpg" alt="陽だまりの家の外観・入口">
+          <span class="rno">02</span>
+        </div>
+        <div class="rbody">
+          <h3>好アクセス</h3>
+          <p>新宿から特急で2時間30分、名古屋から2時間。塩尻駅から車で12分、長野自動車道 塩尻ICから6分と好立地です。</p>
+        </div>
+      </div>
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r03_taue.jpg" alt="田植え体験のようす">
+          <span class="rno">03</span>
+        </div>
+        <div class="rbody">
+          <h3>畑・田んぼ・果樹園</h3>
+          <p>田んぼ、畑、プルーン農園を自社で管理。田植えから収穫まで、本格的な農業体験ができます。</p>
+        </div>
+      </div>
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r04_furo.jpg" alt="お風呂">
+          <span class="rno">04</span>
+        </div>
+        <div class="rbody">
+          <h3>温故知新</h3>
+          <p>五右衛門風呂、囲炉裏、古農具、飯盒炊飯、大羽釜など。昔の暮らしを体験することで、日々のあたりまえに感謝する心が育ちます。</p>
+        </div>
+      </div>
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r05_shizen.jpg" alt="果樹園の豊かな自然">
+          <span class="rno">05</span>
+        </div>
+        <div class="rbody">
+          <h3>非日常空間</h3>
+          <p>山に囲まれ、猿・猪・うさぎ・リス、天然記念物の日本カモシカまで敷地内に現れる、豊かな自然。</p>
+        </div>
+      </div>
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r06_ryori.jpg" alt="みんなで囲む手づくり料理">
+          <span class="rno">06</span>
+        </div>
+        <div class="rbody">
+          <h3>こだわりの料理</h3>
+          <p>手づくり味噌・醤油と重ね煮調理による、ヘルシーで美味しい昔ながらの長野料理。地元ワインもふんだんに。</p>
+        </div>
+      </div>
+      <div class="reason-card">
+        <div class="rphoto">
+          <img src="写真/r07_ryokan.jpg" alt="レトロで落ち着いた館内">
+          <span class="rno">07</span>
+        </div>
+        <div class="rbody">
+          <h3>閑静な旅館</h3>
+          <p>みどり湖に面し、近隣に民家がないため、音楽団体などは深夜まで練習が可能です。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 施設・お部屋 -->
+<section class="rooms" id="rooms" data-page="shisetsu">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">ROOMS &amp; FACILITY</span>
+      <h2>施設・お部屋</h2>
+      <p>用途と人数に合わせて、館ごとにお部屋をご用意しています。</p>
+    </div>
+
+    <div class="room-gallery">
+      <figure><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2019/03/b99dd8_be3e4a7d0e2a4ef3866709987eb1c57a_mv2_d_3543_2362_s_2-scaled.jpeg" alt="和室のお部屋"><figcaption>畳のお部屋</figcaption></figure>
+      <figure><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2024/04/IMG_6175-scaled.jpg" alt="お風呂"><figcaption>お風呂</figcaption></figure>
+      <figure><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-01.jpg" alt="施設外観"><figcaption>施設外観</figcaption></figure>
+    </div>
+
+    <div class="room-table-wrap">
+      <h3>お部屋一覧</h3>
+      <table class="room-table">
+        <tr><th>種類</th><th>宿泊可能人数</th><th>部屋数</th></tr>
+        <tr><td>本館 6畳</td><td class="c">3名</td><td class="c">3部屋</td></tr>
+        <tr><td>本館 8畳</td><td class="c">4名</td><td class="c">6部屋</td></tr>
+        <tr><td>南館 ドミトリーⅠ</td><td class="c">16名</td><td class="c">1部屋</td></tr>
+        <tr><td>南館 ドミトリーⅡ</td><td class="c">12名</td><td class="c">1部屋</td></tr>
+        <tr><td>南館 10畳</td><td class="c">6名</td><td class="c">2部屋</td></tr>
+      </table>
+    </div>
+
+    <details class="acc static" style="margin-top:24px" open>
+      <summary><span class="s-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.6"/><path d="M3 10h18M10 10v10.5"/></svg></span><span class="s-tt">館内図（間取り図）を見る</span></summary>
+      <div class="acc-body">
+        <!-- 本館 館内図 -->
+        <div class="floor">
+          <div class="bhead"><h3>本館</h3><span class="en">HONKAN</span></div>
+          <div class="fp-label">本館2階</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell"><span class="jo">8畳</span><span class="nm">茜</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="jo">6畳</span><span class="nm">梢</span><span class="cap">3名</span></div>
+              <div class="fp-cell fac"><span class="nm">女子<br>トイレ</span></div>
+              <div class="fp-cell fac"><span class="nm">男子<br>トイレ</span></div>
+              <div class="fp-cell"><span class="jo">8畳</span><span class="nm">泉</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="jo">8畳</span><span class="nm">山霧</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="jo">8畳</span><span class="nm">せせらぎ</span><span class="cap">4名</span></div>
+            </div>
+            <div class="fp-row">
+              <div class="fp-cell"><span class="jo">8畳</span><span class="nm">すずな</span><span class="cap">4名</span></div>
+              <div class="fp-cell fac"><span class="nm">階段</span></div>
+              <div class="fp-cell"><span class="jo">6畳</span><span class="nm">すずしろ</span><span class="cap">3名</span></div>
+              <div class="fp-cell"><span class="jo">6畳</span><span class="nm">なずな</span><span class="cap">3名</span></div>
+              <div class="fp-cell"><span class="jo">8畳</span><span class="nm">せり</span><span class="cap">4名</span></div>
+              <div class="fp-cell fac"><span class="nm">ベランダ</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 南館 館内図 -->
+        <div class="floor">
+          <div class="bhead"><h3>南館</h3><span class="en">MINAMIKAN</span></div>
+          <div class="fp-label">南館1階</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell fac"><span class="nm">女子<br>トイレ</span></div>
+              <div class="fp-cell"><span class="jo">10畳</span><span class="nm">萩</span><span class="cap">6名</span></div>
+              <div class="fp-cell"><span class="jo">10畳</span><span class="nm">すみれ</span><span class="cap">6名</span></div>
+              <div class="fp-cell fac"><span class="nm">浴室</span></div>
+              <div class="fp-cell fac"><span class="nm">倉庫</span></div>
+            </div>
+          </div>
+          <div class="fp-label">南館2階</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell fac"><span class="nm">男子<br>トイレ</span></div>
+              <div class="fp-cell dorm"><span class="jo">20畳</span><span class="nm">ドミトリーⅠ</span><span class="cap">16名</span></div>
+              <div class="fp-cell fac"><span class="nm">ベランダ</span></div>
+              <div class="fp-cell dorm"><span class="nm">ドミトリーⅡ</span><span class="cap">12名</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><i style="background:#fff;border-color:#c9b48f"></i>宿泊できるお部屋</span>
+          <span><i style="background:linear-gradient(180deg,#fff9ee,#ffefd2);border-color:#d99a54"></i>大部屋・ドミトリー</span>
+          <span><i style="background:#f3eee2"></i>水まわり・共用</span>
+        </div>
+      </div>
+    </details>
+
+    <div class="fac-note">
+      <b>研修に集中できる設備。</b> 大会議室（80畳）・中会議室（40畳）をはじめ、合宿・研修に欠かせない施設を完備。全館Wi-Fi・音響設備も新しくなりました。
+      <div class="equip">
+        <span class="chip">大会議室 80畳</span><span class="chip">中会議室 40畳</span><span class="chip">プロジェクター</span>
+        <span class="chip">ホワイトボード</span><span class="chip">音響設備</span><span class="chip">全館Wi-Fi</span><span class="chip">五右衛門風呂</span><span class="chip">囲炉裏</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 料金 -->
+<section class="price" id="price" data-page="shisetsu">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">PRICE</span>
+      <h2>ご利用料金</h2>
+      <p>表示はすべて税込みです。</p>
+    </div>
+
+    <!-- 宿泊料金 -->
+    <details class="acc static" open>
+      <summary><span class="s-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6h18v6"/><path d="M3 12V8a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4M13 12V9a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v3"/><path d="M2.5 18h19"/></svg></span><span class="s-tt">宿泊料金<em>合宿利用・1泊2食</em></span></summary>
+      <div class="acc-body">
+        <div class="pcards">
+          <div class="pcard"><div class="lbl">10名未満</div><div class="val">12,100<small>円／名</small></div></div>
+          <div class="pcard"><div class="lbl">11〜20名</div><div class="val">11,000<small>円／名</small></div></div>
+          <div class="pcard"><div class="lbl">21〜50名</div><div class="val">9,900<small>円／名</small></div></div>
+        </div>
+        <p class="note">※閑散期の平日（GW・夏休み・連休・祝祭日の前日・土曜日は除く）は上記金額より <b>▲1,000円／名</b></p>
+        <span class="tax-badge">＋ 宿泊税 200円／名</span>
+      </div>
+    </details>
+
+    <!-- 食事・オプション -->
+    <details class="acc static" open>
+      <summary><span class="s-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 11v10"/><path d="M17 3c-1.4 0-2.5 1.8-2.5 4.5S16 12 16 12v9"/></svg></span><span class="s-tt">お食事・オプション<em>ランチ／夕食／BBQ ほか</em></span></summary>
+      <div class="acc-body">
+        <h3>お食事 <span class="sub">／ 宿泊を伴わない場合</span></h3>
+        <div class="pcards">
+          <div class="pcard"><div class="lbl">ランチ</div><div class="val">1,000<small>円</small></div></div>
+          <div class="pcard"><div class="lbl">夕食</div><div class="val">2,000<small>円</small></div></div>
+        </div>
+        <h3>オプション <span class="sub">／ 2日前までにご予約ください</span></h3>
+        <div class="pcards">
+          <div class="pcard"><div class="lbl">BBQ（お一人）</div><div class="val">＋1,500<small>円</small></div></div>
+          <div class="pcard"><div class="lbl">氷（一袋）</div><div class="val">＋300<small>円</small></div></div>
+          <div class="pcard"><div class="lbl">貸切利用</div><div class="val">＋21,000<small>円</small></div></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 貸し会議室 -->
+    <details class="acc static" open>
+      <summary><span class="s-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="1.6"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></span><span class="s-tt">貸し会議室・貸し出し備品</span></summary>
+      <div class="acc-body">
+        <table style="width:100%">
+          <tr><th>お部屋</th><th class="r">3時間</th><th class="r">6時間</th><th class="r">9時間</th></tr>
+          <tr><td>大会議室</td><td class="r">16,500円</td><td class="r">22,000円</td><td class="r">33,000円</td></tr>
+          <tr><td>中会議室</td><td class="r">7,700円</td><td class="r">11,000円</td><td class="r">16,500円</td></tr>
+        </table>
+        <p class="note">※10名以上の宿泊利用時は、いずれも無料でご利用いただけます。</p>
+        <h3>貸し出し備品</h3>
+        <div class="pcards">
+          <div class="pcard"><div class="lbl">プロジェクター</div><div class="val">550<small>円</small></div></div>
+          <div class="pcard"><div class="lbl">コピー機</div><div class="val" style="font-size:1.02rem">白黒10円<br>カラー50円</div></div>
+          <div class="pcard"><div class="lbl">ホワイトボード</div><div class="val">無料</div></div>
+          <div class="pcard"><div class="lbl">スクリーン</div><div class="val">無料</div></div>
+          <div class="pcard"><div class="lbl">音響機器</div><div class="val">550<small>円</small></div></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- アメニティ -->
+    <details class="acc static" open>
+      <summary><span class="s-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5h12l-1 12.5H7L6 7.5Z"/><path d="M9 7.5a3 3 0 0 1 6 0"/></svg></span><span class="s-tt">アメニティ・販売品</span></summary>
+      <div class="acc-body">
+        <div class="amen">
+          <div class="amen-row"><span class="k">備え付け（無料）</span><span class="v">シャンプー／リンス／ボディーソープ／ドライヤー</span></div>
+          <div class="amen-row"><span class="k">ご用意なし<br><small>お持ち込みください</small></span><span class="v">パジャマ／タオル・バスタオル／歯ブラシ</span></div>
+        </div>
+        <h3>販売品 <span class="sub">／ フロントにて</span></h3>
+        <div class="sell-chips"><span>歯ブラシ</span><span>フェイスタオル</span><span>バスタオル</span></div>
+        <p class="note">フロントにて販売しております。</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- 研修・合宿プラン -->
+<section class="plans" id="plans" data-page="plan">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">PLAN</span>
+      <h2>研修・合宿プラン</h2>
+    </div>
+
+    <!-- 助成金プラン -->
+    <a class="plan-hero" href="#modal-chatgpt">
+      <div class="photo"><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-02.jpg" alt="研修・セミナースペース"></div>
+      <div>
+        <span class="badge">助成金活用</span>
+        <h3>人材開発支援助成金活用 ChatGPT研修プログラム</h3>
+        <p>国の人材開発支援助成金を活用した、企業向けの研修プログラム。最新のAI（ChatGPT）を業務に活かすスキルを、合宿形式で習得いただけます。</p>
+        <span class="card-more">詳しく見る</span>
+      </div>
+    </a>
+
+    <!-- 田舎暮らし体験合宿 -->
+    <div class="inaka">
+      <div class="head">
+        <span class="badge">親子でチャレンジ！</span>
+        <h3>田舎暮らし体験合宿 2026</h3>
+        <p>土にふれ、虫を見つけ、川で遊び、自分たちでごはんをつくる。<br>親子で田舎の暮らしをまるごと楽しみながら、子どもたちの「やってみたい！」を育てる1泊2日の体験プログラムです。</p>
+      </div>
+      <div class="sched-grid">
+        <a class="sched" href="#modal-taue"><div class="photo"><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-03.jpg" alt="田植え"></div><div class="body"><div class="no">1</div><h4>田植え・菜園合宿</h4><div class="date">6/6(土)・7(日)</div><p>泥んこになって苗を植えよう。初夏の自然、夜のホタルも楽しめる季節です。</p><span class="card-more">詳しく見る</span></div></a>
+        <a class="sched" href="#modal-natsu1"><div class="photo"><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/%E8%87%AA%E7%84%B6%E8%BE%B2%E5%86%99%E7%9C%9F-scaled.jpg" alt="夏の自然体験"></div><div class="body"><div class="no">2</div><h4>夏の田舎暮らし体験合宿①</h4><div class="date">7/18(土)・19(日)</div><p>カブトムシいっぱい！夜の虫探し、森遊び。夏の田舎暮らしを親子で体験します。</p><span class="card-more">詳しく見る</span></div></a>
+        <a class="sched" href="#modal-natsu2"><div class="photo"><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-04.jpg" alt="夏の自然遊び"></div><div class="body"><div class="no">3</div><h4>夏の田舎暮らし体験合宿②</h4><div class="date">8/21(金)〜23(日)・2泊3日</div><p>川遊びを中心に、涼しい自然の中で思いきり遊ぶ夏休みの体験合宿です。</p><span class="card-more">詳しく見る</span></div></a>
+        <a class="sched" href="#modal-inekari"><div class="photo"><img src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-05.jpg" alt="収穫・秋の田舎ごはん"></div><div class="body"><div class="no">4</div><h4>秋の稲刈り合宿</h4><div class="date">9/19(土)・20(日)</div><p>実ったお米を親子で収穫。田舎ごはんづくりや秋の自然遊びも楽しみます。</p><span class="card-more">詳しく見る</span></div></a>
+      </div>
+      <details class="acc static" style="margin-top:24px" open>
+        <summary>開催概要（対象・参加費・お支払い）を見る</summary>
+        <div class="detail" style="margin:0;border-radius:0;box-shadow:none;padding:8px 22px 18px">
+          <div class="row"><span class="k">会場</span><span>陽だまりの家（長野県塩尻市金井811）</span></div>
+          <div class="row"><span class="k">時間</span><span>受付 12:30〜13:00 ／ 解散 14:00〜14:30頃</span></div>
+          <div class="row"><span class="k">対象</span><span>親子参加（お子様のみのご参加はご遠慮ください）／ 友人に預けるのは大人1人3名まで</span></div>
+          <div class="row"><span class="k">参加費</span><span>大人 12,000円／小学生 9,500円／3歳以上 7,500円／1〜3歳未満 2,500円（消費税・宿泊税・保険料込）<br>＊2泊3日の場合：大人 22,000円／小学生 17,500円／3歳以上 13,500円／1〜3歳未満 4,500円（全て込み）</span></div>
+          <div class="row" style="border-bottom:none"><span class="k">お支払い</span><span>当日、現金・PayPay・クレジットカード可 ／ ※1日目は昼食を済ませてお越しください ※内容は天候・安全管理上の都合により変更になる場合があります</span></div>
+        </div>
+      </details>
+      <p class="soon">※各回の詳細（持ち物・当日の流れ等）は、決まり次第このページでご案内します。</p>
+    </div>
+  </div>
+</section>
+
+<!-- アクセス -->
+<section class="access" id="access" data-page="access">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">ACCESS</span>
+      <h2>アクセス</h2>
+    </div>
+    <p class="addr">〒399-0721 長野県塩尻市金井811　／　TEL 0263-88-2839</p>
+    <div class="access-grid">
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="12" height="13" rx="2.5"/><path d="M6 11h12M9.5 20l-2 2M14.5 20l2 2"/><path d="M9 14h.01M15 14h.01"/></svg></div><div class="from">新宿から</div><div class="time">2h30m</div><div class="via">特急あずさ</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="12" height="13" rx="2.5"/><path d="M6 11h12M9.5 20l-2 2M14.5 20l2 2"/><path d="M9 14h.01M15 14h.01"/></svg></div><div class="from">名古屋から</div><div class="time">2h00m</div><div class="via">特急しなの</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.6-4.6A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.4L19 11"/><path d="M4 11h16v5H4z"/><path d="M7.5 16v2M16.5 16v2M7 13.7h.5M16.5 13.7h.5"/></svg></div><div class="from">塩尻ICから</div><div class="time">車6分</div><div class="via">長野自動車道</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="12" height="13" rx="2.5"/><path d="M6 11h12M9.5 20l-2 2M14.5 20l2 2"/><path d="M9 14h.01M15 14h.01"/></svg></div><div class="from">みどり湖駅から</div><div class="time">徒歩16分</div><div class="via">JR中央本線</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4 3 11l6 2.5L11.5 20 14 14l7-10Z"/><path d="M9 13.5 21 4"/></svg></div><div class="from">松本空港から</div><div class="time">タクシー22分</div><div class="via">お車で</div></div>
+    </div>
+    <div class="access-map">
+      <iframe src="https://maps.google.com/maps?q=%E9%95%B7%E9%87%8E%E7%9C%8C%E5%A1%A9%E5%B0%BB%E5%B8%82%E9%87%91%E4%BA%95811&z=15&output=embed" loading="lazy" title="陽だまりの家 地図"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- もう一つの施設：塩嶺体験学習の家 -->
+<section class="rooms" id="enrei" data-page="enrei" style="background:linear-gradient(180deg,#eef2e8,#e6ecdb)">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">ENREI</span>
+      <h2>塩嶺体験学習の家</h2>
+      <p>大人数の合宿・研修に。陽だまりの家が運営する、塩尻市北小野の体験学習施設です。</p>
+    </div>
+
+    <div class="fac-note" style="background:var(--white)">
+      自然豊かな北小野勝弦（きたおのかっつる）地区にある、体験学習の拠点施設です。小中学校の校外学習、スポーツ・文化活動の合宿、団体研修などに。自然や農業体験を通じた、生涯学習の場としてご利用いただけます。
+    </div>
+
+    <div class="room-gallery" style="margin-top:24px">
+      <figure><img src="写真/enrei_gaikan.jpg" alt="塩嶺えんれい 外観"><figcaption>外観</figcaption></figure>
+      <figure><img src="写真/enrei_room.jpg" alt="本館 2ベッドルーム"><figcaption>お部屋（2ベッド）</figcaption></figure>
+      <figure><img src="写真/enrei_shokudo.jpg" alt="食堂兼ホール 60名"><figcaption>食堂（60名）</figcaption></figure>
+      <figure><img src="写真/enrei_furo.jpg" alt="本館 お風呂"><figcaption>お風呂</figcaption></figure>
+      <figure><img src="写真/enrei_bbq.jpg" alt="BBQ場"><figcaption>BBQ場</figcaption></figure>
+      <figure><img src="写真/enrei_bekkan.jpg" alt="別館 外観"><figcaption>別館</figcaption></figure>
+    </div>
+
+    <div style="margin-top:24px">
+      <h3 style="text-align:center;font-family:var(--serif);font-weight:500;font-size:1.15rem;margin-bottom:16px">お部屋 <span style="font-size:.9rem;color:var(--amber-deep)">／ 本館・別館あわせて最大63名</span></h3>
+      <table>
+        <tr><th>建物</th><th>お部屋の構成</th><th class="r">収容</th></tr>
+        <tr><td>本館</td><td>2ベッドルーム×14室 ／ 3名和室×1室</td><td class="r">最大31名</td></tr>
+        <tr><td>別館</td><td>4ベッドルーム×8室</td><td class="r">最大32名</td></tr>
+      </table>
+    </div>
+
+    <details class="acc static" style="margin-top:24px" open>
+      <summary><span class="s-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.6"/><path d="M3 10h18M10 10v10.5"/></svg></span><span class="s-tt">館内案内図を見る</span></summary>
+      <div class="acc-body">
+        <!-- 本館1階 -->
+        <div class="floor">
+          <div class="bhead"><h3>本館 1階</h3><span class="en">HONKAN 1F</span></div>
+          <div class="fp-label">客室（各2名）／ 食堂・大浴場・玄関</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell"><span class="nm">101</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">102</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">103</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">105</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">106</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">107</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">108</span><span class="cap">2名</span></div>
+            </div>
+            <div class="fp-row">
+              <div class="fp-cell util"><span class="nm">玄関</span></div>
+              <div class="fp-cell dorm"><span class="nm">食堂・調理室</span><span class="cap">60名まで</span></div>
+              <div class="fp-cell util"><span class="nm">大浴場</span></div>
+              <div class="fp-cell util"><span class="nm">男女トイレ</span></div>
+              <div class="fp-cell util"><span class="nm">管理人室</span></div>
+            </div>
+            <div class="fp-row">
+              <div class="fp-cell dorm"><span class="nm">ラウンジ</span></div>
+              <div class="fp-cell util"><span class="nm">テラス</span></div>
+              <div class="fp-cell util"><span class="nm">中庭</span></div>
+              <div class="fp-cell util"><span class="nm">倉庫</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 本館2階 -->
+        <div class="floor">
+          <div class="bhead"><h3>本館 2階</h3><span class="en">HONKAN 2F</span></div>
+          <div class="fp-label">客室（各2名）／ 3名和室・遊戯室</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell"><span class="nm">201</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">202</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">203</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">205</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">206</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">207</span><span class="cap">2名</span></div>
+              <div class="fp-cell"><span class="nm">208</span><span class="cap">2名</span></div>
+            </div>
+            <div class="fp-row">
+              <div class="fp-cell"><span class="nm">和室</span><span class="cap">3名</span></div>
+              <div class="fp-cell util"><span class="nm">遊戯室</span></div>
+              <div class="fp-cell util"><span class="nm">広縁・テラス</span></div>
+              <div class="fp-cell util"><span class="nm">男女トイレ</span></div>
+              <div class="fp-cell util"><span class="nm">リネン室</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 別館2階 -->
+        <div class="floor">
+          <div class="bhead"><h3>別館 2階</h3><span class="en">BEKKAN 2F</span></div>
+          <div class="fp-label">客室 A〜H（各4名）／ 談話室・和室</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell"><span class="nm">A</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">B</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">C</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">D</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">E</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">F</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">G</span><span class="cap">4名</span></div>
+              <div class="fp-cell"><span class="nm">H</span><span class="cap">4名</span></div>
+            </div>
+            <div class="fp-row">
+              <div class="fp-cell dorm"><span class="nm">談話室</span><span class="cap">20名</span></div>
+              <div class="fp-cell"><span class="nm">和室</span></div>
+              <div class="fp-cell util"><span class="nm">パントリー</span></div>
+              <div class="fp-cell util"><span class="nm">男女トイレ</span></div>
+              <div class="fp-cell util"><span class="nm">リネン・倉庫</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 別館1階 -->
+        <div class="floor">
+          <div class="bhead"><h3>別館 1階</h3><span class="en">BEKKAN 1F</span></div>
+          <div class="fp-label">大浴室・ラウンジ・ホール</div>
+          <div class="fp">
+            <div class="fp-row">
+              <div class="fp-cell dorm"><span class="nm">ラウンジ・ホール</span></div>
+              <div class="fp-cell dorm"><span class="nm">大浴室</span></div>
+              <div class="fp-cell util"><span class="nm">小浴室</span></div>
+              <div class="fp-cell util"><span class="nm">脱衣室</span></div>
+              <div class="fp-cell util"><span class="nm">洗濯室</span></div>
+              <div class="fp-cell util"><span class="nm">倉庫</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i style="background:#fff;border-color:#c9b48f"></i>客室</span>
+          <span><i style="background:linear-gradient(180deg,#fff9ee,#ffefd2);border-color:#d99a54"></i>食堂・大浴室・ラウンジ</span>
+          <span><i style="background:#f5efe2"></i>共用・水まわり</span>
+        </div>
+        <p class="note" style="text-align:center"><a href="写真/enrei_map.png" target="_blank" rel="noopener" style="color:var(--forest);border-bottom:1px solid var(--forest);padding-bottom:1px">▸ 公式の館内案内図（画像）を開く</a></p>
+      </div>
+    </details>
+
+    <div class="fac-note" style="margin-top:24px;background:var(--white)">
+      <b>施設・設備</b>
+      <div class="equip">
+        <span class="chip">食堂・会議室（60名まで食事可）</span>
+        <span class="chip">談話室（本館6名・別館20名）</span>
+        <span class="chip">BBQ場 焼き台6台・約60名</span>
+        <span class="chip">洗濯機2台（1回200円・洗剤込み）</span>
+        <span class="chip">駐車場 大型バス3台／マイクロ6台／乗用20台</span>
+      </div>
+    </div>
+
+    <div style="margin-top:32px">
+      <h3 style="text-align:center;font-family:var(--serif);font-weight:500;font-size:1.2rem;margin-bottom:16px">ご利用料金 <span style="font-size:.85rem;color:var(--ink-soft)">／ 表示はすべて税込</span></h3>
+      <table>
+        <tr><th>宿泊（素泊まり）</th><th class="r">市内利用者</th><th class="r">市外利用者</th></tr>
+        <tr><td>一般</td><td class="r">3,000円</td><td class="r">6,000円</td></tr>
+        <tr><td>小学生・中学生</td><td class="r">1,500円</td><td class="r">3,000円</td></tr>
+      </table>
+      <div class="pcards" style="margin-top:14px">
+        <div class="pcard"><div class="lbl">夕食</div><div class="val">2,000<small>円</small></div></div>
+        <div class="pcard"><div class="lbl">朝食</div><div class="val">800<small>円</small></div></div>
+        <div class="pcard"><div class="lbl">BBQ（食事）</div><div class="val">3,500<small>円</small></div></div>
+      </div>
+      <h4 style="font-family:var(--serif);font-size:1.02rem;color:var(--ink);margin:24px 0 10px">日帰り（会議室利用）</h4>
+      <table>
+        <tr><th>区分</th><th class="r">市内利用者</th><th class="r">市外利用者</th></tr>
+        <tr><td>小学生・中学生</td><td class="r">750円</td><td class="r">1,500円</td></tr>
+        <tr><td>上記以外の方</td><td class="r">1,500円</td><td class="r">3,000円</td></tr>
+      </table>
+      <p class="note">
+        ■ <b>BBQ施設利用料</b>：市内100円／名・一般200円／名（未就学児無料）。宿泊者は無料。ご利用は5時間以内、利用後は原状回復・ゴミはお持ち帰りください。<br>
+        ■ <b>営業時間</b>：宿泊 11:00〜翌10:00 ／ 日帰り 10:00〜16:00 ／ 屋外炊事場 5:00〜20:00　　■ <b>休館日</b>：月曜（祝日の場合はその翌日）<br>
+        ■「市内利用者」＝塩尻市内に在住・在学・在勤の方。<span style="color:var(--terra)">※市外利用者は、金・土・祝祭日の前日、および4/28〜5/5・7月第3週の金曜〜8/31は割増料金（＋3,000円／名）となります。</span>
+      </p>
+    </div>
+
+    <h3 style="text-align:center;font-family:var(--serif);font-weight:500;font-size:1.2rem;margin:36px 0 4px">アクセス</h3>
+    <div class="access-grid">
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.6-4.6A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.4L19 11"/><path d="M4 11h16v5H4z"/><path d="M7.5 16v2M16.5 16v2M7 13.7h.5M16.5 13.7h.5"/></svg></div><div class="from">塩尻ICから</div><div class="time">車15分</div><div class="via">国道20・153号</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.6-4.6A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.4L19 11"/><path d="M4 11h16v5H4z"/><path d="M7.5 16v2M16.5 16v2M7 13.7h.5M16.5 13.7h.5"/></svg></div><div class="from">岡谷ICから</div><div class="time">車15分</div><div class="via">国道20号</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="12" height="13" rx="2.5"/><path d="M6 11h12M9.5 20l-2 2M14.5 20l2 2"/><path d="M9 14h.01M15 14h.01"/></svg></div><div class="from">JR小野駅から</div><div class="time">タクシー5分</div><div class="via">中央本線</div></div>
+      <div class="access-item"><div class="aicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.6-4.6A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.4L19 11"/><path d="M4 11h16v5H4z"/><path d="M7.5 16v2M16.5 16v2M7 13.7h.5M16.5 13.7h.5"/></svg></div><div class="from">東京・名古屋から</div><div class="time">約2h30m</div><div class="via">中央道</div></div>
+    </div>
+    <p class="note" style="text-align:center;margin-top:18px">〒399-0651　長野県塩尻市北小野1440番地150</p>
+  </div>
+</section>
+
+<!-- ご予約 -->
+<!-- 当社の取組み：SDGs -->
+<section class="rooms" id="sdgs" data-page="torikumi" style="background:linear-gradient(180deg,#eef2fb,#e5edf7)">
+  <div class="wrap">
+    <div class="section-head"><span class="en">SDGs</span><h2>SDGsへの取組み</h2>
+      <p>事業を通じた「持続可能な社会・企業・人づくり」を目指しています。</p></div>
+    <div class="sdg-bar"><span style="background:#e5243b"></span><span style="background:#dda63a"></span><span style="background:#4c9f38"></span><span style="background:#c5192d"></span><span style="background:#ff3a21"></span><span style="background:#26bde2"></span><span style="background:#fcc30b"></span><span style="background:#a21942"></span><span style="background:#fd6925"></span><span style="background:#dd1367"></span><span style="background:#fd9d24"></span><span style="background:#bf8b2e"></span><span style="background:#3f7e44"></span><span style="background:#0a97d9"></span><span style="background:#56c02b"></span><span style="background:#00689d"></span><span style="background:#19486a"></span></div>
+    <div class="fac-note" style="background:var(--white)">株式会社スタイルプラスは、SDGs（持続可能な開発目標）への取り組みを通して、志を共にする企業・個人と協力しながら、事業を通じた持続可能な社会づくりを進めています。</div>
+    <h3 class="tori-h">地球環境への取組み</h3>
+    <div class="tori">
+      <div class="item"><div class="tic" style="background:#e7efe1;color:#4f6049"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg></div><h4>廃油・生ゴミのリサイクル</h4><p>リユース箸への切り替え、生ごみは分別して鶏の飼育に活用、廃油は専門業者へ。リサイクル率100％を目指しています。</p></div>
+      <div class="item"><div class="tic" style="background:#e7efe1;color:#4f6049"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10C12 6 9 4 5 4c0 4 3 6 7 6Z"/><path d="M12 13c0-3 2.5-5 6-5 0 3-2.5 5-6 5Z"/></svg></div><h4>自然農による自給・生物多様性</h4><p>自然農での自給を進め、地域農家とも作付け計画を共有。有機野菜は虫食い・規格外も予定数を全量買取しています。</p></div>
+      <div class="item"><div class="tic" style="background:#f6edda;color:#8a6b3f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></div><h4>創エネ・省エネ</h4><p>自社果樹園の剪定木を使った薪ストーブ・ピザ窯、太陽光発電、節水シャワー、LED照明への切り替えなどを継続。</p></div>
+    </div>
+    <h3 class="tori-h">ダイバーシティ経営・教育</h3>
+    <div class="tori">
+      <div class="item"><div class="tic" style="background:#e7f0fd;color:#3f6fc0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M6 20v-1a4 4 0 0 1 8 0v1"/><path d="M17 12a2.5 2.5 0 1 0 0-5"/><path d="M16 20v-1a3 3 0 0 1 4-2.8"/></svg></div><h4>シルバー・子育て中ママの積極採用</h4><p>厨房にベビーベッドを設置、旅館の一室をキッズルームに。子育て中のママも働きやすい環境づくりを進めています。</p></div>
+      <div class="item"><div class="tic" style="background:#e7f0fd;color:#3f6fc0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 4.7 5.2.8-3.8 3.6.9 5.1L12 14.8 7.4 17.2l.9-5.1L4.5 8.5l5.2-.8L12 3Z"/></svg></div><h4>子ども向け体験教育</h4><p>夢合宿・田舎暮らし体験合宿を開催。命をいただくBBQ・キッズキッチン・ものづくり体験で、生きる力を育みます。</p></div>
+    </div>
+    <h3 class="tori-h">地方創生への取組み</h3>
+    <div class="tori">
+      <div class="item"><div class="tic" style="background:#f6e6df;color:#9c5a3c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1-4h14l1 4"/><path d="M5 9v10h14V9"/><path d="M4 9h16"/><path d="M10 19v-5h4v5"/></svg></div><h4>松本つなぐ横丁で街の賑わいを</h4><p>地元のワイン・地酒・地ビール、地域の飲食店が集う場を運営。地元の方も観光客も気軽に食と交流を楽しめます。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 当社の取組み：健康経営 -->
+<section class="rooms" id="wellbeing" data-page="torikumi" style="background:linear-gradient(180deg,#fdeef2,#f6e5eb)">
+  <div class="wrap">
+    <div class="section-head"><span class="en">WELL-BEING</span><h2>健康経営への取組み</h2>
+      <p>「大家族主義」のもと、従業員の心身の健康の維持・向上に取り組んでいます。</p></div>
+    <div class="fac-note" style="background:var(--white)">仕事もプライベートも楽しむには、心身ともに健康であることが大切だと考えています。目標を定めて実践することで、健康の維持・向上につとめています。</div>
+    <h3 class="tori-h">身体面</h3>
+    <div class="tori">
+      <div class="item"><div class="tic" style="background:#eef2e6;color:#6d7d54"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.8A8 8 0 1 1 9.2 3.5a6.3 6.3 0 0 0 11.3 11.3Z"/></svg></div><p>年に5日間の連続休暇を2回取得できる有給休暇制度。</p></div>
+      <div class="item"><div class="tic" style="background:#f6edda;color:#8a6b3f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5h16A8 8 0 0 1 12 19a8 8 0 0 1-8-7.5Z"/><path d="M2.5 11.5h19"/><path d="M9.5 3c-.7 1.1.7 1.8 0 2.9M14.5 3c-.7 1.1.7 1.8 0 2.9"/></svg></div><p>賄いに玄米食を取り入れ、1汁3菜のバランスの良い食事。</p></div>
+      <div class="item"><div class="tic" style="background:#e7f0fd;color:#3f6fc0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8v8M4 10v4M18 8v8M20 10v4M6 12h12"/></svg></div><p>トレーニングマシンを導入し、社内で運動できる環境。</p></div>
+      <div class="item"><div class="tic" style="background:#e7efe1;color:#4f6049"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v2.5H9z"/><path d="M7 5H5v15h14V5h-2"/><path d="M8.5 13l2 2 4-4"/></svg></div><p>健康診断の費用は全額会社負担・業務時間内の受診OK。</p></div>
+      <div class="item"><div class="tic" style="background:#fbe6ec;color:#b05575"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-9-9a4.3 4.3 0 0 1 9-2 4.3 4.3 0 0 1 9 2c-2 4.5-9 9-9 9Z"/></svg></div><p>女性特有の体調管理支援として、月2日のシフト希望休。</p></div>
+    </div>
+    <h3 class="tori-h">精神面</h3>
+    <div class="tori">
+      <div class="item"><div class="tic" style="background:#e7f0fd;color:#3f6fc0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9Z"/></svg></div><p>メンタルヘルスの相談窓口を社内・社外に設置。</p></div>
+      <div class="item"><div class="tic" style="background:#e7efe1;color:#4f6049"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-4"/><path d="M12 18l-4-3h2.5L7 11h2.2L6 7h12l-3.2 4H17l-3.5 4H16l-4 3Z"/></svg></div><p>「社員の夢の木」で、夢の実現を相互に支援。</p></div>
+      <div class="item"><div class="tic" style="background:#f6edda;color:#8a6b3f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14Z"/></svg></div><p>納涼会・創業祭・社員旅行・忘年会で交流を促進。</p></div>
+      <div class="item"><div class="tic" style="background:#f6edda;color:#8a6b3f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg></div><p>感謝の昼礼で日々の出来事を共有し、メンタルケア。</p></div>
+      <div class="item"><div class="tic" style="background:#fbe6ec;color:#b05575"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="2.4"/><path d="M4.5 20v-1a4.5 4.5 0 0 1 9 0v1"/><circle cx="16.5" cy="10" r="2"/><path d="M14.5 20v-.5a3 3 0 0 1 5-2.2"/></svg></div><p>子連れ・時短・フレックス出勤で働きやすい環境。</p></div>
+    </div>
+    <p class="note" style="text-align:center">「健康経営優良法人認定制度」は、特に優良な健康経営を実践する法人を顕彰する制度です（経済産業省）。</p>
+  </div>
+</section>
+
+<!-- 当社の取組み：DX -->
+<section class="rooms" id="dx" data-page="torikumi" style="background:linear-gradient(180deg,#eef2e8,#e6ecdb)">
+  <div class="wrap">
+    <div class="section-head"><span class="en">DX</span><h2>DX推進の取組み</h2>
+      <p>デジタル技術で生産性を高め、地域の中小・零細企業のDX化のモデルを目指しています。</p></div>
+    <div class="fac-note" style="background:var(--white)">まず自社の事業でデジタル技術を活用して生産性を向上させ、地域企業のDX化の参考モデルになることを目指しています。</div>
+    <div class="tori">
+      <div class="item"><div class="tic" style="background:#e7efe1;color:#4f6049"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h4>予約システムのデジタル化</h4><p>オンライン予約を導入し、お部屋や食事オプションをスムーズに選べるように。</p></div>
+      <div class="item"><div class="tic" style="background:#e7f0fd;color:#3f6fc0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg></div><h4>SNSとの連動</h4><p>Instagram・Facebookで新メニューやプラン、イベント・地域情報を発信。</p></div>
+      <div class="item"><div class="tic" style="background:#eef2e6;color:#6d7d54"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9Z"/></svg></div><h4>ChatGPTの活用</h4><p>口コミへの返信・企画案・マーケティング・商品説明の生成に活用し、対応の質をそろえています。</p></div>
+      <div class="item"><div class="tic" style="background:#f6edda;color:#8a6b3f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11M9.3 20V5M14.6 20v-6M20 20H2"/></svg></div><h4>AIによる分析</h4><p>アンケート結果や同業他社の口コミを人工知能で分析しています。</p></div>
+      <div class="item"><div class="tic" style="background:#f6e6df;color:#9c5a3c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.4-2-3.5-2.3 1a7.5 7.5 0 0 0-1.7-1L15 3h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.3-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.4 2 3.5 2.3-1a7.5 7.5 0 0 0 1.7 1L11 21h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.3 1 2-3.5-2-1.4Z"/></svg></div><h4>事務作業の効率化</h4><p>シフト管理・給与計算などをデジタルツールで効率化。</p></div>
+    </div>
+    <p class="note" style="text-align:center">今後は人材育成支援金を活用し、ChatGPT活用の連続セミナーとフォローアップコミュニティを開設。毎月、DXの研究・進捗会議を開催しています。</p>
+  </div>
+</section>
+
+<section class="book" id="book" data-page="yoyaku">
+  <div class="wrap">
+    <h2>ご予約・お問い合わせ</h2>
+    <p>人数・日程・ご予算に合わせて、最適なプランをご案内します。<br>下記の予約フォーム、またはお電話からお気軽にどうぞ。</p>
+    <a href="https://script.google.com/macros/s/AKfycbyXmyW7YFpq18WdobMa0Nt2p__tOyGyjWeLlGQT_g_rC6PyHvL3C9z5_LvuDvriFZmMwQ/exec" target="_blank" rel="noopener" class="btn btn-primary">予約フォームへ進む</a>
+    <div class="tel-big">0263-88-2839<small>受付時間 9:00〜18:00</small></div>
+  </div>
+</section>
+
+<!-- お問い合わせフォーム -->
+<section class="contact" id="contact" data-page="contact">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="en">CONTACT</span>
+      <h2>お問い合わせ</h2>
+      <p>ご質問・ご相談はお気軽に。内容を確認し、担当より折り返しご連絡いたします。</p>
+    </div>
+    <form class="cform" id="cform">
+      <div class="fld">
+        <label>お名前<span class="req">必須</span></label>
+        <input type="text" name="name" required placeholder="山田 太郎">
+      </div>
+      <div class="fld">
+        <label>メールアドレス<span class="req">必須</span></label>
+        <input type="email" name="email" required placeholder="example@mail.com">
+      </div>
+      <div class="fld">
+        <label>電話番号</label>
+        <input type="tel" name="tel" placeholder="000-0000-0000">
+      </div>
+      <div class="fld">
+        <label>お問い合わせ種別</label>
+        <select name="type">
+          <option>宿泊・研修について</option>
+          <option>団体予約について</option>
+          <option>田舎暮らし体験合宿について</option>
+          <option>貸し会議室について</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>お問い合わせ内容<span class="req">必須</span></label>
+        <textarea name="message" required placeholder="ご希望の日程・人数・ご質問などをご記入ください。"></textarea>
+      </div>
+      <button type="submit" class="submit">送信する</button>
+      <p class="privacy">宛先：info@hidamaristyle.com</p>
+    </form>
+  </div>
+</section>
+
+<!-- 詳細モーダル -->
+<div class="pmodal" id="modal-chatgpt">
+  <a class="pm-backdrop" href="#plans" aria-label="閉じる"></a>
+  <div class="pmodal-box">
+    <a class="pm-close" href="#plans" aria-label="閉じる">×</a>
+    <img class="pm-img" src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-02.jpg" alt="研修・セミナースペース">
+    <div class="pm-body">
+      <span class="pm-badge">助成金活用</span>
+      <h2>人材開発支援助成金活用<br>ChatGPT研修プログラム</h2>
+      <h3>本研修プログラムの目的</h3>
+      <p>ChatGPTのリリースは、世界に大きな衝撃を与えました。これからの10年は、これまでの120年に匹敵する変化が起こるといわれています。中小企業が今すぐ活用できる生成AIを、経営に活かせる人材を育てるための研修です。</p>
+      <h3>こんな悩みを解決します</h3>
+      <p>「AIを何に使えばいいか分からない」「業務が人に依存している」「人手が足りない」——そうした課題を、集中できる合宿形式の実践研修で解決へ導きます。</p>
+      <h3>助成金について</h3>
+      <p>国の人材開発支援助成金を活用でき、研修費用の負担を抑えて導入いただけます。詳しくはお気軽にお問い合わせください。</p>
+      <div class="pm-info">
+        <div class="row"><span class="k">形式</span><span class="v">合宿型・企業研修</span></div>
+        <div class="row"><span class="k">対象</span><span class="v">法人・団体さま</span></div>
+        <div class="row"><span class="k">お問合せ</span><span class="v">0263-88-2839</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pmodal" id="modal-taue">
+  <a class="pm-backdrop" href="#plans" aria-label="閉じる"></a>
+  <div class="pmodal-box">
+    <a class="pm-close" href="#plans" aria-label="閉じる">×</a>
+    <img class="pm-img" src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-03.jpg" alt="田植え">
+    <div class="pm-body">
+      <span class="pm-badge">田舎暮らし体験 2026</span>
+      <h2>田植え・菜園合宿</h2>
+      <div class="pm-date">6/6(土)・7(日)</div>
+      <p>泥んこになって苗を植えよう。田んぼの感触、初夏の自然、夜のホタルも楽しめる季節です。親子で田舎の暮らしをまるごと体験する1泊2日です。</p>
+      <div class="pm-info">
+        <div class="row"><span class="k">日程</span><span class="v">6/6(土)・7(日)／1泊2日</span></div>
+        <div class="row"><span class="k">持ち物</span><span class="v">ウォーターシューズ、タオル</span></div>
+        <div class="row"><span class="k">受付</span><span class="v">12:30〜13:00 ／ 解散 14:00〜14:30頃</span></div>
+        <div class="row"><span class="k">参加費</span><span class="v">大人 12,000円／小学生 9,500円 ほか（税・宿泊税・保険料込）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pmodal" id="modal-natsu1">
+  <a class="pm-backdrop" href="#plans" aria-label="閉じる"></a>
+  <div class="pmodal-box">
+    <a class="pm-close" href="#plans" aria-label="閉じる">×</a>
+    <img class="pm-img" src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/%E8%87%AA%E7%84%B6%E8%BE%B2%E5%86%99%E7%9C%9F-scaled.jpg" alt="夏の自然体験">
+    <div class="pm-body">
+      <span class="pm-badge">田舎暮らし体験 2026</span>
+      <h2>夏の田舎暮らし体験合宿①</h2>
+      <div class="pm-date">7/18(土)・19(日)</div>
+      <p>カブトムシいっぱい！夜の虫探しや森遊びなど、夏の田舎暮らしを親子で思いきり体験します。</p>
+      <div class="pm-info">
+        <div class="row"><span class="k">日程</span><span class="v">7/18(土)・19(日)／1泊2日</span></div>
+        <div class="row"><span class="k">持ち物</span><span class="v">懐中電灯、虫籠、軍手</span></div>
+        <div class="row"><span class="k">受付</span><span class="v">12:30〜13:00 ／ 解散 14:00〜14:30頃</span></div>
+        <div class="row"><span class="k">参加費</span><span class="v">大人 12,000円／小学生 9,500円 ほか（税・宿泊税・保険料込）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pmodal" id="modal-natsu2">
+  <a class="pm-backdrop" href="#plans" aria-label="閉じる"></a>
+  <div class="pmodal-box">
+    <a class="pm-close" href="#plans" aria-label="閉じる">×</a>
+    <img class="pm-img" src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-04.jpg" alt="夏の自然遊び">
+    <div class="pm-body">
+      <span class="pm-badge">田舎暮らし体験 2026</span>
+      <h2>夏の田舎暮らし体験合宿②</h2>
+      <div class="pm-date">8/21(金)〜23(日)・2泊3日</div>
+      <p>川遊びを中心に、涼しい自然の中で思いきり遊ぶ夏休みの体験合宿です。2泊3日でたっぷり自然を満喫します。</p>
+      <div class="pm-info">
+        <div class="row"><span class="k">日程</span><span class="v">8/21(金)〜23(日)／2泊3日</span></div>
+        <div class="row"><span class="k">持ち物</span><span class="v">水中眼鏡、ウォーターシューズ、タオル</span></div>
+        <div class="row"><span class="k">受付</span><span class="v">12:30〜13:00 ／ 解散 14:00〜14:30頃</span></div>
+        <div class="row"><span class="k">参加費</span><span class="v">2泊3日：大人 22,000円／小学生 17,500円 ほか（全て込み）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pmodal" id="modal-inekari">
+  <a class="pm-backdrop" href="#plans" aria-label="閉じる"></a>
+  <div class="pmodal-box">
+    <a class="pm-close" href="#plans" aria-label="閉じる">×</a>
+    <img class="pm-img" src="https://www.hidamaristyle.com/wp/wp-content/uploads/2020/04/slide-05.jpg" alt="秋の収穫">
+    <div class="pm-body">
+      <span class="pm-badge">田舎暮らし体験 2026</span>
+      <h2>秋の稲刈り合宿</h2>
+      <div class="pm-date">9/19(土)・20(日)</div>
+      <p>春に植えた実ったお米を、親子で収穫します。田舎ごはんづくりや、秋の自然遊びも楽しめます。</p>
+      <div class="pm-info">
+        <div class="row"><span class="k">日程</span><span class="v">9/19(土)・20(日)／1泊2日</span></div>
+        <div class="row"><span class="k">持ち物</span><span class="v">長靴、軍手</span></div>
+        <div class="row"><span class="k">受付</span><span class="v">12:30〜13:00 ／ 解散 14:00〜14:30頃</span></div>
+        <div class="row"><span class="k">参加費</span><span class="v">大人 12,000円／小学生 9,500円 ほか（税・宿泊税・保険料込）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- フッター -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div>
+        <div class="foot-logo">合宿研修旅館 陽だまりの家</div>
+        <p class="company">
+          〒399-0721 長野県塩尻市金井811<br>
+          TEL 0263-88-2839<br><br>
+          運営：株式会社スタイルプラス<br>
+          設立：2013年4月4日<br>
+          代表取締役：村上博志
+        </p>
+      </div>
+      <div class="foot-col">
+        <h4>ご案内</h4>
+        <a href="#concept">陽だまりの家の想い</a>
+        <a href="#reasons">選ばれる7つの理由</a>
+        <a href="#rooms">施設・お部屋</a>
+        <a href="#price">ご利用料金</a>
+        <a href="#plans">研修・合宿プラン</a>
+      </div>
+      <div class="foot-col">
+        <h4>取り組み</h4>
+        <a href="#">SDGsへの取組み</a>
+        <a href="#">健康経営への取組み</a>
+        <a href="#">DX推進の取組み</a>
+        <a href="#">キャンセルポリシー</a>
+      </div>
+      <div class="foot-col">
+        <h4>関連施設</h4>
+        <a href="#">陽だまりファーム</a>
+        <a href="#">塩嶺体験学習の家</a>
+      </div>
+    </div>
+    <div class="foot-bottom">© 陽だまりの家 / 株式会社スタイルプラス</div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('cform').addEventListener('submit', function(e){
+    e.preventDefault();
+    var f = e.target;
+    var subject = '【HPお問い合わせ】' + f.type.value;
+    var body =
+      'お名前：' + f.name.value + '\n' +
+      'メールアドレス：' + f.email.value + '\n' +
+      '電話番号：' + (f.tel.value || '（未記入）') + '\n' +
+      'お問い合わせ種別：' + f.type.value + '\n\n' +
+      '【お問い合わせ内容】\n' + f.message.value + '\n';
+    window.location.href = 'mailto:encamp.14@gmail.com,info@hidamaristyle.com'
+      + '?subject=' + encodeURIComponent(subject)
+      + '&body=' + encodeURIComponent(body);
+  });
+</script>
+<script>
+(function(){
+  var pages=[].slice.call(document.querySelectorAll('section[data-page]'));
+  var header=document.querySelector('header');
+  function scrollToEl(id){ var el=document.getElementById(id); if(el){ window.scrollTo(0, el.getBoundingClientRect().top+window.pageYOffset-80); } }
+  function show(pg, scrollId){
+    pages.forEach(function(sec){ sec.style.display=(sec.getAttribute('data-page')===pg)?'':'none'; });
+    document.querySelectorAll('.menu>a[data-page], .menu .drop-label[data-page]').forEach(function(a){ a.classList.toggle('active', a.getAttribute('data-page')===pg); });
+    if(header) header.classList.remove('open');
+    if(scrollId){ scrollToEl(scrollId); } else { window.scrollTo(0,0); }
+  }
+  document.querySelectorAll('a[data-page]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); show(a.getAttribute('data-page'), a.getAttribute('data-scroll')); });
+  });
+  document.querySelectorAll('a[href^="#"]:not([data-page])').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var id=a.getAttribute('href').slice(1); if(!id) return;
+      var sec=document.getElementById(id);
+      if(sec && sec.getAttribute('data-page')){ e.preventDefault(); show(sec.getAttribute('data-page'), id); }
+    });
+  });
+  var tg=document.querySelector('.menu-toggle');
+  if(tg) tg.addEventListener('click', function(){ header.classList.toggle('open'); });
+  show('home');
+})();
+</script>
+</body>
+</html>
