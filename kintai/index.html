@@ -490,7 +490,8 @@
         <select id="auditEmp" style="min-width:160px"><option value="">全員</option></select>
         <button onclick="renderAudit()">照合する</button>
       </div>
-      <p class="note">🛡 <b>本当に押した打刻（原本）</b>と、<b>修正後（最終）</b>を並べて照らし合わせます。ちがう日は<span style="background:#fdecec;color:#a3323a;font-weight:bold;padding:0 6px;border-radius:4px;">ピンク</span>で目立たせます。原本は修正で書き換わらないので、後からごまかせません。</p>
+      <p class="note">🛡 <b>本当に押した打刻（原本）</b>と、<b>修正後（最終）</b>を並べて照らし合わせます。ちがう日は<span style="background:#fdecec;color:#a3323a;font-weight:bold;padding:0 6px;border-radius:4px;">ピンク</span>で目立たせます。原本は修正で書き換わらないので、後からごまかせません。<br>
+      📍 <b>打刻場所（原本）</b>の列で、その日どこで打刻したかが分かります。職場の範囲内で打刻したときは <b style="color:#188038">職場</b> と表示、それ以外は<b>座標（緯度経度）</b>で表示され <b>🗺️</b> を押すと地図が開きます。職場以外の日は<span style="background:#fff8ec;padding:0 6px;border-radius:4px;">うすい黄色</span>。※ 職場を「設定」タブで登録していない間は、すべて座標で表示されます。</p>
       <div style="overflow-x:auto; max-height:520px;"><table id="auditTable"></table></div>
       <h3 style="margin-top:22px;">この期間の修正の記録</h3>
       <div style="overflow-x:auto; max-height:260px;"><table id="auditFixLog"></table></div>
@@ -1161,7 +1162,8 @@ function commitPunch(ev, rawEv, emp, type, now) {
   syncDakoku();
   syncRawPunch();
   renderStatus(ev.code);
-  setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました' + (ev.note ? '（' + ev.note + '⚠）' : ''), true);
+  // 打刻する人には場所のことは見せない（職場外でも普通に「記録しました」だけ。確認は管理画面で）
+  setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました', true);
   scheduleReset();
 }
 
@@ -1773,6 +1775,27 @@ function evListStr(evs) {
   return [...evs].sort((a, b) => a.dt - b.dt)
     .map(e => e.type + ' ' + (e.dateTimeStr || '').slice(11, 16)).join(' ／ ');
 }
+// その日の打刻を「どこで押したか」に変える（原本のGPSを使う）
+// 職場の範囲内で打刻＝「職場」と表示／それ以外＝座標（緯度経度）＋地図リンク
+function evPlaceStr(evs) {
+  if (!evs || !evs.length) return '<span style="color:#bbb">—</span>';
+  const short = { '出勤':'出勤', '退勤':'退勤', '休憩開始':'休憩', '休憩終了':'戻り' };
+  return [...evs].sort((a, b) => a.dt - b.dt).map(e => {
+    const hm = (e.dateTimeStr || '').slice(11, 16);
+    let place, color = '#333', map = '';
+    if (e.lat == null) {
+      place = '場所なし'; color = '#bbb';
+    } else if (e.dist != null && e.note !== '職場外') {
+      // 職場に登録した範囲の中で打刻 → 「職場」とだけ表示
+      place = '職場'; color = '#188038';
+    } else {
+      // 職場の外（または職場を未登録）→ 座標をそのまま出す＋地図リンク
+      place = e.lat + ', ' + e.lng; color = '#333';
+      map = ' <a href="https://maps.google.com/?q=' + e.lat + ',' + e.lng + '" target="_blank" style="text-decoration:none" title="地図で見る">🗺️</a>';
+    }
+    return '<span style="white-space:nowrap"><span style="color:#888;font-size:12px">' + (short[e.type] || e.type) + ' ' + hm + '</span> <b style="color:' + color + '">' + place + '</b>' + map + '</span>';
+  }).join('<br>');
+}
 function renderAudit() {
   const tbl = document.getElementById('auditTable');
   if (!tbl) return;
@@ -1788,24 +1811,30 @@ function renderAudit() {
   };
   const rawM = group(rawPunches), finM = group(punchEvents);
   const keys = [...new Set([...Object.keys(rawM), ...Object.keys(finM)])].sort();
-  let diffCount = 0, rows = '';
+  let diffCount = 0, outCount = 0, rows = '';
   for (const k of keys) {
     const cut = k.indexOf('|'); const wd = k.slice(0, cut), code = k.slice(cut + 1);
     const emp = findEmp(code); const nm = emp ? emp.name : code;
-    const rawS = evListStr(rawM[k] || []);
+    const rawEvs = rawM[k] || [];
+    const rawS = evListStr(rawEvs);
     const finS = evListStr(finM[k] || []);
     const diff = rawS !== finS; if (diff) diffCount++;
-    rows += '<tr' + (diff ? ' style="background:#fdecec"' : '') + '>'
+    const isOut = rawEvs.some(e => e.note === '職場外'); if (isOut) outCount++;
+    rows += '<tr' + (diff ? ' style="background:#fdecec"' : (isOut ? ' style="background:#fff8ec"' : '')) + '>'
       + '<td>' + escapeHtml(wd) + '</td>'
       + '<td class="name">' + escapeHtml(nm) + '</td>'
       + '<td>' + (rawS ? escapeHtml(rawS) : '<span style="color:#bbb">（原本なし）</span>') + '</td>'
       + '<td>' + (finS ? '<b>' + escapeHtml(finS) + '</b>' : '<span style="color:#c00">（打刻を取消）</span>') + '</td>'
+      + '<td style="font-size:13px">' + evPlaceStr(rawEvs) + '</td>'
       + '<td>' + (diff ? '<b style="color:#c0392b">⚠ 修正あり</b>' : '<span style="color:#188038">一致</span>') + '</td></tr>';
   }
-  const head = '<tr><th style="width:96px">勤務日</th><th style="width:110px">氏名</th><th>原本（本当に押した打刻）</th><th>最終（修正後）</th><th style="width:96px">照合</th></tr>';
+  const head = '<tr><th style="width:96px">勤務日</th><th style="width:100px">氏名</th><th>原本（本当に押した打刻）</th><th>最終（修正後）</th><th style="width:170px">打刻場所（原本）</th><th style="width:90px">照合</th></tr>';
+  const msgs = [];
+  if (diffCount) msgs.push('⚠ ' + diffCount + '日ぶん、原本と最終がちがいます（修正が入っています）'); else msgs.push('✔ すべて原本どおり。修正は入っていません');
+  if (outCount) msgs.push('📍 ' + outCount + '日ぶん、職場以外の場所での打刻があります（座標で表示）。打刻場所の列を確かめてください');
   const summary = keys.length
-    ? '<tr><td colspan="5" style="background:' + (diffCount ? '#fff6f6' : '#f1f8f1') + ';font-weight:bold;color:' + (diffCount ? '#c0392b' : '#188038') + '">'
-      + (diffCount ? '⚠ ' + diffCount + '日ぶん、原本と最終がちがいます（修正が入っています）。中身を確かめてください。' : '✔ すべて原本どおり。修正は入っていません。') + '</td></tr>'
+    ? '<tr><td colspan="6" style="background:' + ((diffCount || outCount) ? '#fff6f6' : '#f1f8f1') + ';font-weight:bold;color:' + ((diffCount || outCount) ? '#c0392b' : '#188038') + '">'
+      + msgs.join('　／　') + '</td></tr>'
     : '';
   tbl.innerHTML = keys.length ? head + summary + rows : '<tr><td>この月の打刻はまだありません</td></tr>';
   if (logTbl) {
