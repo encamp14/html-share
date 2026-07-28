@@ -912,7 +912,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors, pin });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -935,6 +935,7 @@ function pullState(manual) {
       if (obj.commutes)  { commutes  = obj.commutes;  save(LS_COMMUTE, commutes); }
       if (obj.confirms)  { confirms  = obj.confirms;  save(LS_CONFIRM, confirms); }
       if (obj.editors)   { editors   = obj.editors;   save(LS_EDITORS, editors); }
+      if (obj.pin)       { pin       = obj.pin;       save(LS_PIN, pin); }   // パスワードも全端末で共有
       if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
       if (obj.rawPunches)  { rawPunches  = obj.rawPunches;  save(LS_RAWPUNCH, rawPunches); }
       renderStatus(currentCode);
@@ -2359,8 +2360,9 @@ function savePin() {
   if (!/^[0-9]{4}$/.test(p)) { alert('数字4桁で入れてください'); return; }
   pin = p;
   save(LS_PIN, pin);
+  pushState();   // パスワードを全端末に共有（次に各端末が取り込むと同じ番号になる）
   document.getElementById('pinInput').value = '';
-  alert('暗証番号を変更しました');
+  alert('暗証番号を変更しました（他の端末にも共有されます）');
 }
 
 /* ---- 管理者の権限 ---- */
