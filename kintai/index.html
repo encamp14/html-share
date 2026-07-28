@@ -600,6 +600,19 @@
       </div>
       <p class="note" style="margin-top:2px;">※ 日付切替時刻：深夜まで営業する場合、この時刻より前の打刻を「前日の勤務」にします（ふつうは 00:00）。事業場マスタに時刻があればそちらが優先されます。</p>
 
+      <h3>打刻した場所の記録（職場からの距離）</h3>
+      <div class="row-form">
+        <button onclick="registerGeo()">📍 いまの場所を「職場」に登録</button>
+        <label style="font-size:14px;color:#555">職場とみなす範囲</label>
+        <input type="tel" id="geoRadius" placeholder="300" style="width:90px"> m
+        <button onclick="saveGeo()">範囲を保存</button>
+        <button class="gray" onclick="clearGeo()">職場の登録を消す</button>
+      </div>
+      <p class="note" id="geoStatus" style="margin-top:2px;"></p>
+      <p class="note">※ 打刻するたびに<b>「どこで打刻したか」がスプレッドシートに記録</b>されます（地図リンクつき）。<b>ブロックはしません</b>。<br>
+      ※ <b>職場のiPadで、職場にいるときに「いまの場所を職場に登録」を押す</b>と、以降の打刻に<b>「職場から〇〇m」</b>が付き、範囲より遠い打刻には<b>「⚠職場外」</b>の印がつきます（家からの打刻がひと目で分かる）。<br>
+      ※ 職場を登録しなくても、打刻場所（緯度経度・地図）は記録されます。</p>
+
       <h3>修正できる担当者（パスワードつき）</h3>
       <div class="row-form">
         <input type="text" id="edName" placeholder="担当者の名前" style="width:180px">
@@ -782,7 +795,14 @@ function syncRawPunch() {
   pushSheet('打刻（原本）', ['打刻ID','勤務日付','打刻日時','社員コード','氏名','打刻種別','事業場','端末','位置情報','地図'], rows);
 }
 // 位置情報の表示用
-function locStr(e) { return (e.lat != null && e.lng != null) ? (e.lat + ', ' + e.lng + (e.acc ? '（±' + e.acc + 'm）' : '')) : ''; }
+function locStr(e) {
+  if (e.lat == null || e.lng == null) return e.note ? ('⚠' + e.note) : '';
+  let s = e.lat + ', ' + e.lng;
+  if (e.dist != null) s += '｜職場から' + e.dist + 'm';
+  else if (e.acc) s += '（±' + e.acc + 'm）';
+  if (e.note) s += ' ⚠' + e.note;
+  return s;
+}
 function mapLink(e) { return (e.lat != null && e.lng != null) ? ('https://maps.google.com/?q=' + e.lat + ',' + e.lng) : ''; }
 function syncDay(date, code) { syncDakoku(); }  // 呼び出し互換（丸ごと更新）
 
@@ -1127,6 +1147,12 @@ function punch(type) {
     workDate: wd, site, terminal: '', t: '打刻'
   };
   const rawEv = {...ev};
+  // すぐ記録（ブロックしない）＋どこで打刻したかを後から付ける
+  commitPunch(ev, rawEv, emp, type, now);
+  attachLocation(ev, rawEv);
+}
+
+function commitPunch(ev, rawEv, emp, type, now) {
   punchEvents.push(ev);                 // 最終（修正で書き換わる版）
   rawPunches.push(rawEv);               // 原本（本当に押した打刻・二度と書き換えない）
   save(LS_EVENTS, punchEvents);
@@ -1134,19 +1160,25 @@ function punch(type) {
   rebuildRecords();
   syncDakoku();
   syncRawPunch();
-  attachLocation(ev, rawEv);            // 位置情報（GPS）を後から付ける
-  renderStatus(code);
-  setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました', true);
+  renderStatus(ev.code);
+  setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました' + (ev.note ? '（' + ev.note + '⚠）' : ''), true);
   scheduleReset();
 }
 
-// 打刻に位置情報（GPS）を付ける。許可がないと空のまま（打刻自体は成功）
+// 打刻に位置情報（GPS）を付ける。許可がないと空のまま（打刻自体は成功）。ブロックはしない
 function attachLocation(ev, rawEv) {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(function(pos) {
     const lat = +pos.coords.latitude.toFixed(6), lng = +pos.coords.longitude.toFixed(6), acc = Math.round(pos.coords.accuracy);
-    ev.lat = lat; ev.lng = lng; ev.acc = acc;
-    if (rawEv) { rawEv.lat = lat; rawEv.lng = lng; rawEv.acc = acc; }
+    const set = (o) => {
+      o.lat = lat; o.lng = lng; o.acc = acc;
+      if (office.geoLat != null) {                       // 職場を登録していれば、そこからの距離も出す
+        const d = Math.round(distanceM(office.geoLat, office.geoLng, lat, lng));
+        o.dist = d;
+        if (d > (office.geoRadius || 300) + acc) o.note = '職場外';   // 遠い＝印だけ（打刻はできる）
+      }
+    };
+    set(ev); if (rawEv) set(rawEv);
     save(LS_EVENTS, punchEvents); save(LS_RAWPUNCH, rawPunches);
     syncDakoku(); syncRawPunch();
   }, function() { /* 拒否・失敗しても打刻は成功のまま */ },
@@ -1357,6 +1389,7 @@ function openAdmin() {
     currentUser = u;
   }
   updateChiefUI();
+  updateGeoStatus();
 
   renderEmpTable();
   renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
@@ -2234,11 +2267,54 @@ function saveOffice() {
   const code = normalizeCode(document.getElementById('offCode').value) || '999';
   const name = document.getElementById('offName').value.trim() || '本部';
   const cut = document.getElementById('offCut').value || '00:00';
-  office = {code, name, cut};
+  office = {...office, code, name, cut};   // 職場の位置(geo)などは残す
   save(LS_OFF, office);
   renderOffice();
   pushState();
   alert('保存しました');
+}
+
+/* ---- 打刻できる場所（ジオフェンス） ---- */
+function updateGeoStatus() {
+  const el = document.getElementById('geoStatus'); if (!el) return;
+  if (office.geoLat != null) {
+    el.innerHTML = '<b style="color:#0a7a2f">✔ 職場を登録ずみ</b>：' + office.geoLat + ', ' + office.geoLng + '（範囲 ' + (office.geoRadius || 300) + 'm）。打刻に「職場から〇〇m」＋遠ければ「⚠職場外」が付きます（ブロックはしません）';
+  } else {
+    el.innerHTML = '<b style="color:#999">職場は未登録</b>：打刻場所（緯度経度・地図）は記録されます。職場を登録すると「職場からの距離」も付きます';
+  }
+  const r = document.getElementById('geoRadius'); if (r && !r.value) r.value = office.geoRadius || 300;
+}
+function registerGeo() {
+  if (!requireChief()) return;
+  if (!navigator.geolocation) { alert('この端末では位置情報が使えません'); return; }
+  alert('いまの場所を職場として登録します。次の画面で「許可」を押してください。');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    office = {...office, geoLat: +pos.coords.latitude.toFixed(6), geoLng: +pos.coords.longitude.toFixed(6),
+      geoRadius: Number(document.getElementById('geoRadius').value) || 300 };
+    save(LS_OFF, office); updateGeoStatus(); pushState();
+    alert('職場の場所を登録しました（' + office.geoLat + ', ' + office.geoLng + '）。\nこれ以降、ここから' + office.geoRadius + 'm以内でしか打刻できません。');
+  }, function() { alert('位置を取得できませんでした。iPadの位置情報がオンか確認してください。'); },
+     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+function saveGeo() {
+  if (!requireChief()) return;
+  if (office.geoLat == null) { alert('先に「いまの場所を職場に登録」を押してください'); return; }
+  office = {...office, geoRadius: Number(document.getElementById('geoRadius').value) || 300 };
+  save(LS_OFF, office); updateGeoStatus(); pushState();
+  alert('許可する範囲を ' + office.geoRadius + 'm に保存しました');
+}
+function clearGeo() {
+  if (!requireChief()) return;
+  if (!confirm('職場しばりを解除しますか？（どこからでも打刻できるようになります）')) return;
+  const o = {...office}; delete o.geoLat; delete o.geoLng; delete o.geoRadius;
+  office = o; save(LS_OFF, office); updateGeoStatus(); pushState();
+}
+// 2点間の距離(m)：ハバサイン
+function distanceM(lat1, lng1, lat2, lng2) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (lat2 - lat1) * toR, dLng = (lng2 - lng1) * toR;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*toR) * Math.cos(lat2*toR) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 function savePin() {
