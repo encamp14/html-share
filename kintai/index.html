@@ -348,6 +348,7 @@
       <button id="tabbtn-term" onclick="adminTab('term')">端末</button>
       <button id="tabbtn-commute" onclick="adminTab('commute')">交通費</button>
       <button id="tabbtn-fix" onclick="adminTab('fix')">勤怠の修正</button>
+      <button id="tabbtn-audit" onclick="adminTab('audit')">原本と照合</button>
       <button id="tabbtn-sum" onclick="adminTab('sum')">月の集計・給与</button>
       <button id="tabbtn-dow" onclick="adminTab('dow')">曜日別集計</button>
       <button id="tabbtn-slip" onclick="adminTab('slip')">給与明細</button>
@@ -478,6 +479,21 @@
       <h3 style="margin-top:22px;">🛡 修正の記録（不正対策）</h3>
       <p class="note">誰かが打刻を後から変えたら、ここに「いつ・どの日を・どう変えたか（前→後）」が自動で残ります。消せません。</p>
       <div style="overflow-x:auto; max-height:300px;"><table id="fixLogTable"></table></div>
+    </div>
+
+    <!-- 原本と照合（不正チェック） -->
+    <div class="tabpage" id="tab-audit">
+      <div class="row-form">
+        <label style="font-size:18px">対象月</label>
+        <input type="month" id="auditMonth">
+        <label style="font-size:18px">スタッフ</label>
+        <select id="auditEmp" style="min-width:160px"><option value="">全員</option></select>
+        <button onclick="renderAudit()">照合する</button>
+      </div>
+      <p class="note">🛡 <b>本当に押した打刻（原本）</b>と、<b>修正後（最終）</b>を並べて照らし合わせます。ちがう日は<span style="background:#fdecec;color:#a3323a;font-weight:bold;padding:0 6px;border-radius:4px;">ピンク</span>で目立たせます。原本は修正で書き換わらないので、後からごまかせません。</p>
+      <div style="overflow-x:auto; max-height:520px;"><table id="auditTable"></table></div>
+      <h3 style="margin-top:22px;">この期間の修正の記録</h3>
+      <div style="overflow-x:auto; max-height:260px;"><table id="auditFixLog"></table></div>
     </div>
 
     <!-- 月の集計・給与 -->
@@ -656,6 +672,7 @@ const LS_TERM = 'kintai_terms';       // 端末マスタ
 const LS_COMMUTE = 'kintai_commutes'; // 交通費マスタ
 const LS_CONFIRM = 'kintai_confirms'; // 月次確定 {ym:{at}}
 const LS_EDITORS = 'kintai_editors';  // 修正できる担当者 [{name, pw}]
+const LS_RAWPUNCH = 'kintai_rawpunch'; // 打刻の原本（本当に押した打刻・追記のみ・修正で書き換えない）
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -672,7 +689,13 @@ let pin       = load(LS_PIN, '9999');
 let fixLog    = load(LS_FIXLOG, []); // 修正履歴 [{time,date,code,name,type,before,after}]
 let depts     = load(LS_DEPT, []);  // 部門マスタ [{code, name}]
 let sites     = load(LS_SITE, []);  // 事業場マスタ [{code, name, dept, addr, cut, active}]
-let punchEvents = load(LS_EVENTS, []); // 打刻トラン [{id,code,name,type,dt,dateTimeStr,workDate,site,terminal,t}]
+let punchEvents = load(LS_EVENTS, []); // 打刻トラン（最終・修正反映）[{id,code,name,type,dt,dateTimeStr,workDate,site,terminal,t}]
+let rawPunches  = load(LS_RAWPUNCH, []); // 打刻の原本（本当に押した打刻・修正で書き換えない）
+// 既存データからの移行：原本がまだ無ければ、いまの打刻トランの「打刻」ぶんを原本の初期値にする（1回だけ）
+if (rawPunches.length === 0 && punchEvents.length > 0) {
+  rawPunches = punchEvents.filter(e => (e.t || '打刻') === '打刻').map(e => ({...e, t: '打刻'}));
+  save(LS_RAWPUNCH, rawPunches);
+}
 let terms     = load(LS_TERM, []);  // 端末マスタ [{id, name, site, active}]
 let commutes  = load(LS_COMMUTE, []); // 交通費マスタ [{code, site, kind, amount, start, end}]
 let confirms  = load(LS_CONFIRM, {}); // 月次確定 {ym:{at}}
@@ -747,10 +770,20 @@ function dayPayload(date, code) {
 function syncDakoku() {
   if (!syncUrl) return;
   const rows = [...punchEvents].sort((a, b) => a.dt - b.dt).map(e =>
-    [e.id, e.workDate, e.dateTimeStr, e.code, e.name, e.type, e.site || '', e.t || '打刻', e.terminal || '']);
-  pushSheet('打刻', ['打刻ID','勤務日付','打刻日時','社員コード','氏名','打刻種別','事業場','種類','端末'], rows);
+    [e.id, e.workDate, e.dateTimeStr, e.code, e.name, e.type, e.site || '', e.t || '打刻', e.terminal || '', locStr(e), mapLink(e)]);
+  pushSheet('打刻（最終）', ['打刻ID','勤務日付','打刻日時','社員コード','氏名','打刻種別','事業場','種類','端末','位置情報','地図'], rows);
   pushState();
 }
+// 打刻の原本（本当に押した打刻）を専用シートへ。修正では絶対に書き換えない＝不正チェックの土台
+function syncRawPunch() {
+  if (!syncUrl) return;
+  const rows = [...rawPunches].sort((a, b) => a.dt - b.dt).map(e =>
+    [e.id, e.workDate, e.dateTimeStr, e.code, e.name, e.type, e.site || '', e.terminal || '', locStr(e), mapLink(e)]);
+  pushSheet('打刻（原本）', ['打刻ID','勤務日付','打刻日時','社員コード','氏名','打刻種別','事業場','端末','位置情報','地図'], rows);
+}
+// 位置情報の表示用
+function locStr(e) { return (e.lat != null && e.lng != null) ? (e.lat + ', ' + e.lng + (e.acc ? '（±' + e.acc + 'm）' : '')) : ''; }
+function mapLink(e) { return (e.lat != null && e.lng != null) ? ('https://maps.google.com/?q=' + e.lat + ',' + e.lng) : ''; }
 function syncDay(date, code) { syncDakoku(); }  // 呼び出し互換（丸ごと更新）
 
 // 表まるごと1シートに送る（スタッフ・月集計・売上・シフト・掲示板はこの方式で上書き）
@@ -851,7 +884,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, terms, commutes, confirms, editors });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -875,6 +908,7 @@ function pullState(manual) {
       if (obj.confirms)  { confirms  = obj.confirms;  save(LS_CONFIRM, confirms); }
       if (obj.editors)   { editors   = obj.editors;   save(LS_EDITORS, editors); }
       if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
+      if (obj.rawPunches)  { rawPunches  = obj.rawPunches;  save(LS_RAWPUNCH, rawPunches); }
       renderStatus(currentCode);
       if (document.getElementById('adminModal').classList.contains('show')) {
         renderEmpTable(); renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
@@ -1086,18 +1120,37 @@ function punch(type) {
   const site = office.code || '';
   // 勤務日付：出勤は日付切替時刻から決定／退勤・休憩は開いている出勤と同じ勤務日を使う
   const wd = (type === '出勤') ? workDateOf(now, cutForSite(site)) : (openSessionWorkDate(code) || workDateOf(now, cutForSite(site)));
-  punchEvents.push({
+  const ev = {
     id: 'PU' + now.getTime() + Math.floor(Math.random() * 1000),
     code, name: emp.name, type, dt: now.getTime(),
     dateTimeStr: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
     workDate: wd, site, terminal: '', t: '打刻'
-  });
+  };
+  const rawEv = {...ev};
+  punchEvents.push(ev);                 // 最終（修正で書き換わる版）
+  rawPunches.push(rawEv);               // 原本（本当に押した打刻・二度と書き換えない）
   save(LS_EVENTS, punchEvents);
+  save(LS_RAWPUNCH, rawPunches);
   rebuildRecords();
   syncDakoku();
+  syncRawPunch();
+  attachLocation(ev, rawEv);            // 位置情報（GPS）を後から付ける
   renderStatus(code);
   setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました', true);
   scheduleReset();
+}
+
+// 打刻に位置情報（GPS）を付ける。許可がないと空のまま（打刻自体は成功）
+function attachLocation(ev, rawEv) {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = +pos.coords.latitude.toFixed(6), lng = +pos.coords.longitude.toFixed(6), acc = Math.round(pos.coords.accuracy);
+    ev.lat = lat; ev.lng = lng; ev.acc = acc;
+    if (rawEv) { rawEv.lat = lat; rawEv.lng = lng; rawEv.acc = acc; }
+    save(LS_EVENTS, punchEvents); save(LS_RAWPUNCH, rawPunches);
+    syncDakoku(); syncRawPunch();
+  }, function() { /* 拒否・失敗しても打刻は成功のまま */ },
+     { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
 }
 
 function resetScreen() {
@@ -1311,8 +1364,10 @@ function openAdmin() {
   fillSiteSelect('empSite', '事業場を選ぶ'); fillSiteSelect('termSite', '設置事業場を選ぶ'); fillSiteSelect('cmSite', '事業場を選ぶ');
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
+  fillEmpSelect('auditEmp'); document.getElementById('auditEmp').insertAdjacentHTML('afterbegin', '<option value="">全員</option>');
+  document.getElementById('auditEmp').value = '';
   const ym = thisYM();
-  ['sumMonth','fixMonth','slipMonth','shiftMonth','salesMonth','dowMonth'].forEach(id => {
+  ['sumMonth','fixMonth','slipMonth','shiftMonth','salesMonth','dowMonth','auditMonth'].forEach(id => {
     if (!document.getElementById(id).value) document.getElementById(id).value = ym;
   });
   if (!document.getElementById('salesDate').value) document.getElementById('salesDate').value = todayKey();
@@ -1326,10 +1381,11 @@ function openAdmin() {
 }
 
 function adminTab(name) {
-  ['emp','dept','site','term','commute','fix','sum','dow','slip','shift','board','sales','set'].forEach(t => {
+  ['emp','dept','site','term','commute','fix','audit','sum','dow','slip','shift','board','sales','set'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('on', t===name);
     document.getElementById('tabbtn-'+t).classList.toggle('on', t===name);
   });
+  if (name === 'audit') renderAudit();
 }
 
 function escapeHtml(s) {
@@ -1678,6 +1734,63 @@ function renderFixLog() {
   tbl.innerHTML = html;
 }
 
+/* ---- 原本と照合（不正チェック） ---- */
+// その日の打刻イベントを「出勤 8:53 ／ 休憩開始 12:00 …」の1行文字列にする
+function evListStr(evs) {
+  return [...evs].sort((a, b) => a.dt - b.dt)
+    .map(e => e.type + ' ' + (e.dateTimeStr || '').slice(11, 16)).join(' ／ ');
+}
+function renderAudit() {
+  const tbl = document.getElementById('auditTable');
+  if (!tbl) return;
+  const ym = document.getElementById('auditMonth').value;
+  const empSel = document.getElementById('auditEmp').value;
+  const logTbl = document.getElementById('auditFixLog');
+  if (!ym) { tbl.innerHTML = '<tr><td>対象月を選んで「照合する」を押してください</td></tr>'; if (logTbl) logTbl.innerHTML = ''; return; }
+  const inScope = e => (e.workDate || '').slice(0, 7) === ym && (!empSel || e.code === empSel);
+  const group = arr => {
+    const m = {};
+    for (const e of arr) { if (!inScope(e)) continue; const k = e.workDate + '|' + e.code; (m[k] = m[k] || []).push(e); }
+    return m;
+  };
+  const rawM = group(rawPunches), finM = group(punchEvents);
+  const keys = [...new Set([...Object.keys(rawM), ...Object.keys(finM)])].sort();
+  let diffCount = 0, rows = '';
+  for (const k of keys) {
+    const cut = k.indexOf('|'); const wd = k.slice(0, cut), code = k.slice(cut + 1);
+    const emp = findEmp(code); const nm = emp ? emp.name : code;
+    const rawS = evListStr(rawM[k] || []);
+    const finS = evListStr(finM[k] || []);
+    const diff = rawS !== finS; if (diff) diffCount++;
+    rows += '<tr' + (diff ? ' style="background:#fdecec"' : '') + '>'
+      + '<td>' + escapeHtml(wd) + '</td>'
+      + '<td class="name">' + escapeHtml(nm) + '</td>'
+      + '<td>' + (rawS ? escapeHtml(rawS) : '<span style="color:#bbb">（原本なし）</span>') + '</td>'
+      + '<td>' + (finS ? '<b>' + escapeHtml(finS) + '</b>' : '<span style="color:#c00">（打刻を取消）</span>') + '</td>'
+      + '<td>' + (diff ? '<b style="color:#c0392b">⚠ 修正あり</b>' : '<span style="color:#188038">一致</span>') + '</td></tr>';
+  }
+  const head = '<tr><th style="width:96px">勤務日</th><th style="width:110px">氏名</th><th>原本（本当に押した打刻）</th><th>最終（修正後）</th><th style="width:96px">照合</th></tr>';
+  const summary = keys.length
+    ? '<tr><td colspan="5" style="background:' + (diffCount ? '#fff6f6' : '#f1f8f1') + ';font-weight:bold;color:' + (diffCount ? '#c0392b' : '#188038') + '">'
+      + (diffCount ? '⚠ ' + diffCount + '日ぶん、原本と最終がちがいます（修正が入っています）。中身を確かめてください。' : '✔ すべて原本どおり。修正は入っていません。') + '</td></tr>'
+    : '';
+  tbl.innerHTML = keys.length ? head + summary + rows : '<tr><td>この月の打刻はまだありません</td></tr>';
+  if (logTbl) {
+    const fl = fixLog.filter(l => (l.date || '').slice(0, 7) === ym && (!empSel || l.code === empSel));
+    const color = { '追加': '#0a7a2f', '修正': '#c07a00', '取消': '#c00' };
+    let lh = '<tr><th style="width:130px">変更した日時</th><th style="width:56px">種類</th><th style="width:90px">対象の日</th><th>氏名</th><th>変更前</th><th>変更後</th><th style="width:90px">修正者</th><th>理由</th></tr>';
+    for (const l of fl) {
+      lh += '<tr><td>' + escapeHtml(l.time) + '</td>'
+        + '<td style="font-weight:bold;color:' + (color[l.type] || '#333') + '">' + escapeHtml(l.type) + '</td>'
+        + '<td>' + escapeHtml(l.date) + '</td><td class="name">' + escapeHtml(l.name) + '</td>'
+        + '<td style="color:#888">' + escapeHtml(l.before) + '</td><td><b>' + escapeHtml(l.after) + '</b></td>'
+        + '<td>' + escapeHtml(l.editor || '') + '</td><td>' + escapeHtml(l.reason || '') + '</td></tr>';
+    }
+    if (!fl.length) lh += '<tr><td colspan="8" style="color:#888">この期間の修正はありません。</td></tr>';
+    logTbl.innerHTML = lh;
+  }
+}
+
 function fixRowRec(d) {
   const rec = {};
   for (const f of FIELDS) {
@@ -1717,9 +1830,23 @@ function saveFix() {
   const empName = emp ? emp.name : '(削除済み)';
   // 修正した人＝ログイン中の担当者（管理画面を開くときに本人パスワードで確認ずみ）
   const editor = (currentUser && currentUser.name) ? currentUser.name : '管理者';
-  let reason = '';                            // 修正の理由（最初の変更時に1回だけ聞く）
-  let askedReason = false;
   const n = daysInMonth(ym);
+  // 変更があるか先に確認（理由を必須で聞くため）
+  let hasChange = false;
+  for (let d = 1; d <= n; d++) {
+    const key = ym + '-' + pad(d);
+    const oldR = (records[key] && records[key][code]) ? records[key][code] : {};
+    if (!recEqual(oldR, fixRowRec(d))) { hasChange = true; break; }
+  }
+  if (!hasChange) { alert('変更がありません'); return; }
+  // 修正理由は必須（不正防止のため、誰が・なぜ直したかを必ず記録に残す）
+  let reason = '';
+  while (true) {
+    const r = prompt('修正の理由を入力してください（必須）\n例：本人の打ち忘れ／出勤時刻の打ち間違い', '');
+    if (r === null) return;                     // キャンセル＝修正をやめる
+    if (r.trim() === '') { alert('理由は必ず入力してください。\n（誰が・なぜ直したかを記録に残すためです）'); continue; }
+    reason = r.trim(); break;
+  }
   const changes = []; let fxSeq = 0;
   for (let d = 1; d <= n; d++) {
     const key = ym + '-' + pad(d);
@@ -1745,7 +1872,6 @@ function saveFix() {
       mk(newRec.go2, '休憩開始'); mk(newRec.bk2, '休憩終了'); mk(newRec.out, '退勤');
     }
 
-    if (!askedReason) { reason = prompt('修正の理由を入力してください（例：本人の打ち忘れ）', '') || ''; askedReason = true; }
     changes.push({ time: nowStamp(), date: key, code, name: empName, type,
       before: recStr(oldRec), after: recStr(newRec), editor, reason });
   }
@@ -2192,14 +2318,14 @@ function fullSync() {
   if (!syncUrl) { alert('先にURLを入れて「保存する」を押してください'); return; }
   if (!confirm('今アプリにある全データ（打刻・スタッフ・月集計・売上・シフト・掲示板）をスプレッドシートに送り、グラフも更新します。よろしいですか？')) return;
   // すべてのシートを丸ごと最新にする
-  syncDept(); syncSite(); syncTerm(); syncCommute(); syncConfirm(); syncDakoku(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
+  syncDept(); syncSite(); syncTerm(); syncCommute(); syncConfirm(); syncDakoku(); syncRawPunch(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
   alert('全データを送りました。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
 }
 
 function backupData() {
   const data = {
-    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, terms, commutes, confirms, editors,
+    employees, records, office, shifts, board, sales, fixLog, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors,
     saved: new Date().toLocaleString('ja-JP')
   };
   downloadFile('勤怠バックアップ_' + todayKey() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -2219,9 +2345,10 @@ function restoreData(input) {
       shifts = data.shifts || {}; board = data.board || []; sales = data.sales || {};
       fixLog = data.fixLog || []; depts = data.depts || []; sites = data.sites || [];
       punchEvents = data.punchEvents || []; terms = data.terms || []; commutes = data.commutes || []; confirms = data.confirms || {}; editors = data.editors || [];
+      rawPunches = data.rawPunches || (punchEvents.filter(e => (e.t || '打刻') === '打刻').map(e => ({...e, t: '打刻'})));
       save(LS_EMP, employees); save(LS_REC, records); save(LS_OFF, office);
       save(LS_SHIFT, shifts); save(LS_BOARD, board); save(LS_SALES, sales); save(LS_FIXLOG, fixLog);
-      save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents);
+      save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents); save(LS_RAWPUNCH, rawPunches);
       save(LS_TERM, terms); save(LS_COMMUTE, commutes); save(LS_CONFIRM, confirms); save(LS_EDITORS, editors);
       if (punchEvents.length) rebuildRecords();
       renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
