@@ -255,9 +255,30 @@
     .spacer { display:none; }
     .clock { font-size:22vw; }
   }
+  /* 端末しばりのロック画面 */
+  #devLockScreen { display:none; position:fixed; inset:0; z-index:99999;
+    background:#2b2b3a; color:#fff; align-items:center; justify-content:center; text-align:center; padding:24px; }
+  #devLockScreen.on { display:flex; }
+  #devLockScreen .devlock-box { max-width:440px; }
+  #devLockScreen .devlock-icon { font-size:60px; }
+  #devLockScreen h2 { font-size:25px; margin:12px 0; }
+  #devLockScreen p { font-size:15.5px; line-height:1.9; opacity:.92; margin-bottom:22px; }
+  #devLockScreen button { background:#5b5ea6; color:#fff; border:none; border-radius:12px;
+    padding:13px 22px; font-size:15px; cursor:pointer; }
+  #devLockScreen button:active { opacity:.85; }
 </style>
 </head>
 <body>
+
+<!-- ===== 端末しばり：ロック画面（登録した端末以外は打刻できない） ===== -->
+<div id="devLockScreen">
+  <div class="devlock-box">
+    <div class="devlock-icon">🔒</div>
+    <h2>この端末では使用できません</h2>
+    <p>この勤怠アプリは、<b>登録された端末（お店のiPad）だけ</b>で使えます。<br>お手数ですが、管理者にお問い合わせください。</p>
+    <button onclick="registerThisDevice(false)">管理者はこちら（この端末を登録する）</button>
+  </div>
+</div>
 
 <!-- ===== 打刻画面 ===== -->
 <div class="office" id="officeLabel">999：本部</div>
@@ -633,6 +654,22 @@
         <input type="tel" id="pinInput" placeholder="新しい暗証番号（4桁）" style="width:220px" maxlength="4">
         <button onclick="savePin()">変更する</button>
       </div>
+
+      <h3>🔒 端末しばり（登録した端末だけ使える・不正防止）</h3>
+      <div class="row-form">
+        <label style="font-size:15.5px;"><input type="checkbox" id="devLockChk" style="transform:scale(1.4);margin-right:8px;" onchange="toggleDevLock()">端末しばりを使う（登録した端末以外はロック）</label>
+      </div>
+      <p class="note" id="devLockStatus" style="margin-top:2px;"></p>
+      <div class="row-form">
+        <button onclick="registerThisDevice(true)">この端末を登録する</button>
+        <button class="gray" onclick="unregisterThisDevice()">この端末の登録を解除</button>
+      </div>
+      <p class="note">
+        ・ONにすると、<b>登録した端末（お店のiPad）だけ</b>が使えます。URLを知られても、<b>登録していない端末は開いてもロック画面で何もできません</b>。<br>
+        ・ONにした端末は<b>自動で登録</b>されます。もう1台足すときは、その端末のこの画面で「この端末を登録する」＋管理パスワードで登録。<br>
+        ・iPadが壊れた・機種変したときは、新しい端末をここで登録し直せばOK。<br>
+        ・⚠ これは<b>アプリ側の守り</b>です（ふつうの不正は防げます）。とても詳しい人にも完全に防ぐには、次のステップで<b>サーバー側の確認</b>を足します。
+      </p>
       <h3>スプレッドシート連携（自動反映）</h3>
       <div class="row-form">
         <input type="text" id="syncUrlInput" placeholder="連携用のURL（ウェブアプリのURL）をはりつけ" style="width:440px">
@@ -687,6 +724,8 @@ const LS_COMMUTE = 'kintai_commutes'; // 交通費マスタ
 const LS_CONFIRM = 'kintai_confirms'; // 月次確定 {ym:{at}}
 const LS_EDITORS = 'kintai_editors';  // 修正できる担当者 [{name, pw}]
 const LS_RAWPUNCH = 'kintai_rawpunch'; // 打刻の原本（本当に押した打刻・追記のみ・修正で書き換えない）
+const LS_DEVLOCK = 'kintai_devlock';   // 端末しばり ON/OFF（全端末で共有）
+const LS_DEVOK   = 'kintai_devok';     // この端末が登録済みか＝合言葉（この端末だけに保存・共有しない）
 
 function load(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch(e){ return def; }
@@ -714,6 +753,8 @@ let terms     = load(LS_TERM, []);  // 端末マスタ [{id, name, site, active}
 let commutes  = load(LS_COMMUTE, []); // 交通費マスタ [{code, site, kind, amount, start, end}]
 let confirms  = load(LS_CONFIRM, {}); // 月次確定 {ym:{at}}
 let editors   = load(LS_EDITORS, []); // 修正できる担当者 [{name, pw}]
+let devLock   = load(LS_DEVLOCK, false); // 端末しばり機能ON/OFF（共有）
+let devOk     = load(LS_DEVOK, '');       // この端末の合言葉（登録済みなら入っている・共有しない）
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
 const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbz4lgvSxkJIMatfVBe8AzS0eMY2hZDruCdsME63hHVuX-O49FuyLptwk2MOpla7kNGbtg/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
@@ -912,7 +953,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
-  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors, pin });
+  const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors, pin, devLock });
   sendToSheet({ type: 'state', blob });
 }
 // 共有データを取り込んで、この端末を最新にする
@@ -936,6 +977,7 @@ function pullState(manual) {
       if (obj.confirms)  { confirms  = obj.confirms;  save(LS_CONFIRM, confirms); }
       if (obj.editors)   { editors   = obj.editors;   save(LS_EDITORS, editors); }
       if (obj.pin)       { pin       = obj.pin;       save(LS_PIN, pin); }   // パスワードも全端末で共有
+      if (obj.devLock !== undefined) { devLock = obj.devLock; save(LS_DEVLOCK, devLock); applyDeviceLock(); }  // 端末しばりON/OFFも共有
       if (obj.punchEvents) { punchEvents = obj.punchEvents; save(LS_EVENTS, punchEvents); rebuildRecords(); }
       if (obj.rawPunches)  { rawPunches  = obj.rawPunches;  save(LS_RAWPUNCH, rawPunches); }
       renderStatus(currentCode);
@@ -1400,6 +1442,7 @@ function openAdmin() {
   }
   updateChiefUI();
   updateGeoStatus();
+  updateDevLockUI();
 
   renderEmpTable();
   renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
@@ -2365,6 +2408,73 @@ function savePin() {
   alert('暗証番号を変更しました（他の端末にも共有されます）');
 }
 
+/* ===== 端末しばり（登録した端末だけ使える／不正防止） ===== */
+// ロックすべきか＝機能ONで、この端末が未登録のとき
+function applyDeviceLock() {
+  const ov = document.getElementById('devLockScreen');
+  if (!ov) return;
+  const locked = !!devLock && !devOk;
+  ov.classList.toggle('on', locked);
+}
+// この端末を「打刻用」に登録する。ロック画面からは管理パスワードが必要／設定内はログイン済みなので不要
+function registerThisDevice(fromSettings) {
+  if (!fromSettings) {
+    const p = prompt('管理パスワードを入れてください\n（この端末を打刻用に登録します）');
+    if (p === null) return;
+    if (normalizeCode(p) !== pin) { alert('パスワードが違います。\n登録された端末以外は使用できません。'); return; }
+  } else {
+    if (!requireChief()) return;
+  }
+  devOk = 'DEV' + new Date().getTime() + Math.floor(Math.random() * 1000000);
+  save(LS_DEVOK, devOk);
+  applyDeviceLock();
+  updateDevLockUI();
+  alert('この端末を登録しました。使えるようになります。');
+}
+// この端末の登録を解除（この端末が使えなくなる）
+function unregisterThisDevice() {
+  if (!requireChief()) return;
+  if (!confirm('この端末の登録を解除します。\n端末しばりがONの間、この端末では打刻できなくなります。よろしいですか？')) return;
+  devOk = '';
+  save(LS_DEVOK, devOk);
+  updateDevLockUI();
+  applyDeviceLock();
+  alert('この端末の登録を解除しました。');
+}
+// 端末しばりのON/OFF切り替え（主担当のみ）
+function toggleDevLock() {
+  const chk = document.getElementById('devLockChk');
+  if (!requireChief()) { if (chk) chk.checked = !!devLock; return; }
+  const on = chk ? chk.checked : !devLock;
+  if (on) {
+    // ONにするなら、まず今の端末を登録（自分がロックアウトされないように）
+    if (!devOk) { devOk = 'DEV' + new Date().getTime() + Math.floor(Math.random() * 1000000); save(LS_DEVOK, devOk); }
+    devLock = true;
+  } else {
+    if (!confirm('端末しばりをOFFにすると、URLを知っていれば誰でも・どの端末でも打刻できるようになります。\n本当にOFFにしますか？')) { if (chk) chk.checked = true; return; }
+    devLock = false;
+  }
+  save(LS_DEVLOCK, devLock);
+  pushState();          // ON/OFFを全端末に共有
+  updateDevLockUI();
+  applyDeviceLock();
+  alert(devLock
+    ? '端末しばりをONにしました。\nこの端末は「登録済み」です。\n他のiPadは、その端末の設定画面で「この端末を登録する」＋管理パスワードで登録してください。'
+    : '端末しばりをOFFにしました（今はどの端末でも使えます）。');
+}
+// 設定画面の表示を更新
+function updateDevLockUI() {
+  const chk = document.getElementById('devLockChk');
+  if (chk) chk.checked = !!devLock;
+  const st = document.getElementById('devLockStatus');
+  if (st) {
+    st.innerHTML = devLock
+      ? ('<b style="color:#0a7a2f">ON</b>：登録した端末だけが使えます。この端末は '
+        + (devOk ? '<b style="color:#0a7a2f">登録済み（使えます）</b>' : '<b style="color:#c0392b">未登録</b>') + '。')
+      : '<b style="color:#999">OFF</b>：今はどの端末でも使えます（URLを知っていれば打刻できてしまいます）。';
+  }
+}
+
 /* ---- 管理者の権限 ---- */
 function updateChiefUI() {
   const el = document.getElementById('loginWho');
@@ -2485,6 +2595,7 @@ document.getElementById('codeInput').addEventListener('keydown', e => {
 migrateRecordsToEvents();
 rebuildRecords();
 renderStatus(null);
+applyDeviceLock();   // 端末しばりON＆未登録ならロック画面を出す
 
 /* 起動時：この端末がまだ空なら、共有データ（他の端末で入れた分）を取り込む */
 if (syncUrl && employees.length === 0 && punchEvents.length === 0) {
