@@ -372,7 +372,6 @@
       <button id="tabbtn-audit" onclick="adminTab('audit')">原本と照合</button>
       <button id="tabbtn-sum" onclick="adminTab('sum')">月の集計・給与</button>
       <button id="tabbtn-dow" onclick="adminTab('dow')">曜日別集計</button>
-      <button id="tabbtn-slip" onclick="adminTab('slip')">給与明細</button>
       <button id="tabbtn-shift" onclick="adminTab('shift')">シフト表</button>
       <button id="tabbtn-board" onclick="adminTab('board')">掲示板</button>
       <button id="tabbtn-sales" onclick="adminTab('sales')">売上速報</button>
@@ -550,21 +549,6 @@
         ※ スタッフに「金土日の時給」を登録すると、その分の給与が自動で高く計算されます（「週末アップ額」＝ふつうの時給より増える金額）。<br>
         ※ 「金土日の時給」は 管理画面 → スタッフ で登録できます。
       </p>
-    </div>
-
-    <!-- 給与明細 -->
-    <div class="tabpage" id="tab-slip">
-      <div class="row-form">
-        <label style="font-size:18px">対象月</label>
-        <input type="month" id="slipMonth">
-        <label style="font-size:18px">スタッフ</label>
-        <select id="slipEmp" style="min-width:160px"></select>
-        <button onclick="renderSlip()">明細を作る</button>
-        <button class="gray" onclick="printSlip()">印刷する</button>
-      </div>
-      <div id="slipArea"></div>
-      <p class="note">※ 時給×勤務時間の「支給見込み」です。税金や保険の引き落としは入っていないので、正式な明細は給与計算ソフトで。<br>
-      ※ スマホで見せたいときは、この画面のまま印刷→PDF保存してLINE等で送るのが手軽です。</p>
     </div>
 
     <!-- シフト表 -->
@@ -1459,11 +1443,10 @@ function openAdmin() {
   fillDeptSelect('siteDept'); fillDeptSelect('empDept');
   fillSiteSelect('empSite', '事業場を選ぶ'); fillSiteSelect('termSite', '設置事業場を選ぶ'); fillSiteSelect('cmSite', '事業場を選ぶ');
   fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
-  fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
-  fillEmpSelect('auditEmp'); document.getElementById('auditEmp').insertAdjacentHTML('afterbegin', '<option value="">全員</option>');
+  fillEmpSelect('fixEmp');  fillEmpSelect('auditEmp'); document.getElementById('auditEmp').insertAdjacentHTML('afterbegin', '<option value="">全員</option>');
   document.getElementById('auditEmp').value = '';
   const ym = thisYM();
-  ['sumMonth','fixMonth','slipMonth','shiftMonth','salesMonth','dowMonth','auditMonth'].forEach(id => {
+  ['sumMonth','fixMonth','shiftMonth','salesMonth','dowMonth','auditMonth'].forEach(id => {
     if (!document.getElementById(id).value) document.getElementById(id).value = ym;
   });
   if (!document.getElementById('salesDate').value) document.getElementById('salesDate').value = todayKey();
@@ -1477,7 +1460,7 @@ function openAdmin() {
 }
 
 function adminTab(name) {
-  ['emp','dept','site','term','commute','fix','audit','sum','dow','slip','shift','board','sales','set'].forEach(t => {
+  ['emp','dept','site','term','commute','fix','audit','sum','dow','shift','board','sales','set'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('on', t===name);
     document.getElementById('tabbtn-'+t).classList.toggle('on', t===name);
   });
@@ -1749,8 +1732,7 @@ function addEmployee() {
   save(LS_EMP, employees);
   ['empCode','empName','empWage','empWend','empSalary','empAllow','empJoin','empLeave'].forEach(id => document.getElementById(id).value = '');
   renderEmpTable();
-  fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
-  syncStaff();
+  fillEmpSelect('fixEmp');  syncStaff();
 }
 
 function editEmployee(code) {
@@ -1779,8 +1761,7 @@ function delEmployee(code) {
   employees = employees.filter(e => e.code !== code);
   save(LS_EMP, employees);
   renderEmpTable();
-  fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
-  syncStaff();
+  fillEmpSelect('fixEmp');  syncStaff();
 }
 
 /* ---- 勤怠の修正 ---- */
@@ -2615,8 +2596,7 @@ function restoreData(input) {
       save(LS_DEPT, depts); save(LS_SITE, sites); save(LS_EVENTS, punchEvents); save(LS_RAWPUNCH, rawPunches);
       save(LS_TERM, terms); save(LS_COMMUTE, commutes); save(LS_CONFIRM, confirms); save(LS_EDITORS, editors);
       if (punchEvents.length) rebuildRecords();
-      renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp');
-      renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
+      renderOffice(); renderEmpTable(); renderDept(); renderSite(); fillDeptSelect('siteDept'); fillEmpSelect('fixEmp');      renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales();
       alert('読み込みました');
     } catch(e) {
       alert('読み込めませんでした：' + e.message);
