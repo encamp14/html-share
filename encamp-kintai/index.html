@@ -2580,8 +2580,11 @@ function resetAllData() {
     syncDept(); syncSite(); syncTerm(); syncCommute(); syncConfirm();
     pushState();
   }
-  alert('まっさらにリセットしました。\nスプレッドシートも空になります（送信に数秒かかります）。\n画面を新しくします。');
-  setTimeout(function () { location.reload(); }, 2500);   // 送信が流れ切ってから更新
+  alert('まっさらにリセットします。\nスプレッドシートも空にします（送信が終わるまで待ちます）。\n終わったら画面が新しくなります。');
+  // 送信キュー（1本ずつ直列）が全部流れ切ってから画面更新＝表シートの消し残りを防ぐ
+  Promise.resolve(_sendQueue).then(function () {
+    location.reload();
+  });
 }
 
 function backupData() {
