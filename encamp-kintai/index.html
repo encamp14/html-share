@@ -979,7 +979,7 @@ function pullState(manual) {
         renderEmpTable(); renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
         fillDeptSelect('siteDept'); fillDeptSelect('empDept');
         fillSiteSelect('empSite'); fillSiteSelect('termSite'); fillSiteSelect('cmSite');
-        fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
+        fillEmpSelect('fixEmp'); fillEmpSelect('cmEmp');
         renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
       }
       if (manual) alert('最新のデータを取り込みました');
@@ -1442,7 +1442,7 @@ function openAdmin() {
   renderDept(); renderSite(); renderTerm(); renderCommute(); renderEditors();
   fillDeptSelect('siteDept'); fillDeptSelect('empDept');
   fillSiteSelect('empSite', '事業場を選ぶ'); fillSiteSelect('termSite', '設置事業場を選ぶ'); fillSiteSelect('cmSite', '事業場を選ぶ');
-  fillEmpSelect('fixEmp'); fillEmpSelect('slipEmp'); fillEmpSelect('cmEmp');
+  fillEmpSelect('fixEmp'); fillEmpSelect('cmEmp');
   fillEmpSelect('fixEmp');  fillEmpSelect('auditEmp'); document.getElementById('auditEmp').insertAdjacentHTML('afterbegin', '<option value="">全員</option>');
   document.getElementById('auditEmp').value = '';
   const ym = thisYM();
@@ -1685,6 +1685,7 @@ function delCommute(i) {
 /* ---- スタッフ ---- */
 function fillEmpSelect(id) {
   const sel = document.getElementById(id);
+  if (!sel) return;   // 削除済みの部品を呼んでも落ちない（管理画面が固まるのを防ぐ）
   const sorted = [...employees].sort((a,b) => Number(a.code) - Number(b.code));
   sel.innerHTML = sorted.map(e => '<option value="' + escapeHtml(e.code) + '">' + escapeHtml(e.code + '：' + e.name) + '</option>').join('');
 }
