@@ -696,6 +696,16 @@
         ・月に1回「全データを書き出す」でファイルを残しておくと、iPadが壊れても復元できます。<br>
         ・暗証番号の最初の設定は <b>9999</b> です。必ず変えてください。
       </p>
+
+      <h3 style="color:#c0392b;">⚠ まっさらリセット（初期化）</h3>
+      <div class="row-form">
+        <button onclick="resetAllData()" style="background:#c0392b;color:#fff;">全データをまっさらにする</button>
+      </div>
+      <p class="note">
+        ・打刻・スタッフ・集計など<b>全部のデータを消して、ゼロから始めます</b>（テストのあとや、別の会社に渡すときの初期化に使う）。<br>
+        ・<b>暗証番号（5626）・連携・端末しばりの設定は残ります。</b><br>
+        ・スプレッドシートの各シートも空になります。<b>取り消せない</b>ので、不安なときは先に「全データを書き出す」でバックアップを。
+      </p>
     </div>
 
     <button class="close-btn" onclick="hide('adminModal')">閉じる</button>
@@ -2545,6 +2555,33 @@ function fullSync() {
   syncDept(); syncSite(); syncTerm(); syncCommute(); syncConfirm(); syncDakoku(); syncRawPunch(); syncStaff(); syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard(); syncFixLog();
   rebuildDash();
   alert('全データを送りました。\n少し待ってからスプレッドシートを見てください。\nグラフは「ダッシュボード」シートに自動で作られます。');
+}
+
+// 全データをまっさらに（テスト後の初期化・他社導入時の初期化にも使う）
+// 暗証番号・連携URL・端末しばりの設定は残す。打刻・スタッフ・集計などのデータだけ全消し
+function resetAllData() {
+  if (!requireChief()) return;
+  if (!confirm('⚠ 全データを消して「まっさら」にします。\n\n消えるもの：打刻・原本・修正履歴・スタッフ・各集計・売上・シフト・掲示板・各マスタ\n残るもの：暗証番号（5626）・スプレッドシート連携・端末しばりの設定\n\n本当にリセットしますか？')) return;
+  if (!confirm('最終確認：本当に全部消しますか？\nこの操作は取り消せません。（不安なら先に「全データを書き出す」でバックアップを）')) return;
+  // 端末内のデータを空に
+  employees = []; records = {}; shifts = {}; board = []; sales = {}; fixLog = [];
+  depts = []; sites = []; punchEvents = []; rawPunches = []; terms = []; commutes = []; confirms = {};
+  editors = [];
+  office = { code: office.code || '999', name: office.name || '本部' };  // 事業所名は残す・職場GPSは消す
+  [[LS_EMP, employees], [LS_REC, records], [LS_SHIFT, shifts], [LS_BOARD, board], [LS_SALES, sales],
+   [LS_FIXLOG, fixLog], [LS_DEPT, depts], [LS_SITE, sites], [LS_EVENTS, punchEvents], [LS_RAWPUNCH, rawPunches],
+   [LS_TERM, terms], [LS_COMMUTE, commutes], [LS_CONFIRM, confirms], [LS_OFF, office], [LS_EDITORS, editors]
+  ].forEach(kv => save(kv[0], kv[1]));
+  rebuildRecords();
+  // スプレッドシートの各シートも空に＋共有データも空に（全端末に反映）
+  if (syncUrl) {
+    syncDakoku(); syncRawPunch(); syncStaff(); syncFixLog();
+    syncSummaryAll(); syncDowAll(); syncSalesAll(); syncShiftAll(); syncBoard();
+    syncDept(); syncSite(); syncTerm(); syncCommute(); syncConfirm();
+    pushState();
+  }
+  alert('まっさらにリセットしました。\nスプレッドシートも空になります（送信に数秒かかります）。\n画面を新しくします。');
+  setTimeout(function () { location.reload(); }, 2500);   // 送信が流れ切ってから更新
 }
 
 function backupData() {
