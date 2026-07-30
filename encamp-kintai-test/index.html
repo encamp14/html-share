@@ -751,7 +751,7 @@ let editors   = load(LS_EDITORS, []); // 修正できる担当者 [{name, pw}]
 let devLock   = load(LS_DEVLOCK, false); // 端末しばり機能ON/OFF（共有）
 let devOk     = load(LS_DEVOK, '');       // この端末の合言葉（登録済みなら入っている・共有しない）
 // 連携先をアプリに組み込み（初回から自動で反映。設定タブで変更・オフも可能）
-const DEFAULT_SYNC_URL = '';
+const DEFAULT_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwHP8pVuZUPz618M-BpV-9NGd-_hkcaxaa43topYt-mWWrFJGM3A-gyObtJj1z5gZSy/exec';
 let syncUrl   = load(LS_SYNC, DEFAULT_SYNC_URL);  // 未設定の端末は組み込みの連携先を使う
 
 // 旧データ（時給なし）を新形式にそろえる
