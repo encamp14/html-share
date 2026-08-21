@@ -457,11 +457,14 @@ function parseMail(){
     [...sumLine.matchAll(/(?:小学生|小学校[低中高]学年|中学生|高校生|子供|こども|児童)[\s　]*(\d+)/g)].forEach(m=>kids+=parseInt(m[1]));
     [...sumLine.matchAll(/(?:幼児|乳児|未就学児?)[\s　]*(\d+)/g)].forEach(m=>infants+=parseInt(m[1]));
   } else {
-    // 「大人:2名」「大人 ： 2名」「【大人】2名」など各形式に対応。行の最初の「◯名」を人数として拾う（男性/女性の内訳は無視）
-    const firstCount=line=>{const m=line.match(/(\d+)[\s　]*[名人]/);return m?parseInt(m[1]):0;};
-    adults=firstCount((t.match(/大人[^\n]*/)||[])[0]||"");
-    (t.match(/(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\n]*/g)||[]).forEach(l=>kids+=firstCount(l));
-    (t.match(/(?:幼児|乳児|未就学児?)[^\n]*/g)||[]).forEach(l=>infants+=firstCount(l));
+    // 各室の「大人：N名」「小学生：N名」「幼児：N名」だけを厳密に数える。
+    // ★キーワードの直後に（コロン/空白をはさんで）数字＋名/人 が来る形だけを拾うので、
+    //   じゃらんの料金明細「（小学生）× 2名」やプラン名「小学生半額」は数えない＝倍にならない。
+    //   複数室（1部屋目・2部屋目…）は各室の「大人：N名」を合算する。
+    const sumBy=re=>{let n=0;[...t.matchAll(re)].forEach(m=>n+=parseInt(m[1]));return n;};
+    adults = sumBy(/大人[\s　]*[:：]?[\s　]*(\d+)[\s　]*[名人]/g);
+    kids   = sumBy(/(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[\s　]*[:：]?[\s　]*(\d+)[\s　]*[名人]/g);
+    infants= sumBy(/(?:幼児|乳児|未就学児?)[\s　]*[:：]?[\s　]*(\d+)[\s　]*[名人]/g);
   }
   let people=[];
   if(adults)people.push("大人"+adults+"名");
