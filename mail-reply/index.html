@@ -431,9 +431,11 @@ function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
   window.isIkyu = /一休|ikyu|通知連番|宿泊延べ人数/.test(t); // 一休は返信5000文字上限
-  // 氏名 → フルネーム（[氏名]／お名前／名前、半角・全角コロン対応。読み仮名・様は除く）
-  let nameRaw=pick(/(?:氏名|お名前|名前)[】\]]?[\s　]*[:：]?[\s　]*([^\n(（]+)/,t);
-  let name=nameRaw.replace(/様\s*$/,"").replace(/[\s　]+/g,"").trim();
+  // 氏名 → フルネーム。宿泊者/会員/氏名などの候補を集め、漢字を含む正式表記を優先。
+  // （楽天は「宿泊者氏名：ひらがな」「会員氏名：漢字」のことがあるので漢字を採用。じゃらんの（カナ）行も自動で後回し）
+  const nameCands=[...t.matchAll(/(?:宿泊者氏名|会員氏名|宿泊代表者氏名|氏名|お名前|名前)[^\n:：]*?[:：][ 　]*([^\n(（]+)/g)]
+    .map(m=>m[1].replace(/様\s*$/,"").replace(/[\s　]+/g,"").trim()).filter(Boolean);
+  let name=nameCands.find(s=>/[一-鿿]/.test(s)) || nameCands[0] || "";
   // 宿泊日（★予約受付日時は宿泊日ではないので必ず除外してから探す）
   let date="";
   {
@@ -454,8 +456,19 @@ function parseMail(){
   const sumLine=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[])[0]||"";
   if(/大人[\s　]*\d/.test(sumLine)){
     adults=parseInt((sumLine.match(/大人[\s　]*(\d+)/)||[])[1]||0);
-    [...sumLine.matchAll(/(?:小学生|小学校[低中高]学年|中学生|高校生|子供|こども|児童)[\s　]*(\d+)/g)].forEach(m=>kids+=parseInt(m[1]));
-    [...sumLine.matchAll(/(?:幼児|乳児|未就学児?)[\s　]*(\d+)/g)].forEach(m=>infants+=parseInt(m[1]));
+    const scan=(str,re)=>{let n=0,m;const r=new RegExp(re,"g");while(m=r.exec(str))n+=parseInt(m[1]);return n;};
+    const kidRe="(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生)[^0-9]{0,4}(\\d+)";
+    const infRe="(?:幼児|乳児|未就学児?)[^0-9]{0,4}(\\d+)";
+    // 楽天「子供1名(小学校 高学年1名)」のように括弧内に内訳があれば、内訳で数える（子供の総数と二重にしない）
+    const paren=(sumLine.match(/[(（]([^)）]*)[)）]/)||[])[1]||"";
+    if(paren && (scan(paren,kidRe)+scan(paren,infRe))>0){
+      kids=scan(paren,kidRe); infants=scan(paren,infRe);
+    } else {
+      // 括弧なし（一休など）＝子供の総数をそのまま数える
+      const body=sumLine.replace(/[(（][^)）]*[)）]/g,"");
+      kids=scan(body,"(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生|子供|こども|児童)[^0-9]{0,4}(\\d+)");
+      infants=scan(body,infRe);
+    }
   } else {
     // ★お部屋割りの部分【だけ】で人数を数える（料金明細やプラン名の「×2名」を誤カウントしないため）。
     //  ①料金・決済セクション以降を切り落とす → ②お部屋割り/部屋数の位置から後ろに絞る
@@ -884,7 +897,9 @@ const TEST_CASES=[
   {name:"一休 まとめ行（別分岐でも正しいか）", site:"一休", people:"大人2名・小学生1名",
    raw:`一休.com\n宿泊延べ人数：大人2名 + 子供1名\n氏名：見本三郎 様\n宿泊日 2026/09/01`},
   {name:"複数室（各室を合算できるか）", site:"489ban（自社予約サイト・HP直予約）", people:"大人5名",
-   raw:`GLAMPINGBASE enCamp様\n下記のとおり宿泊予約がありました\n[宿泊日]:2026/08/10から1泊\n▼お部屋割り　====\n　1部屋目：大人：2名\n　2部屋目：大人：3名\n▼ご宿泊料金　====\n　大人\n　1000円 × 5`}
+   raw:`GLAMPINGBASE enCamp様\n下記のとおり宿泊予約がありました\n[宿泊日]:2026/08/10から1泊\n▼お部屋割り　====\n　1部屋目：大人：2名\n　2部屋目：大人：3名\n▼ご宿泊料金　====\n　大人\n　1000円 × 5`},
+  {name:"楽天 まとめ行＋括弧内訳（子供と内訳を二重にしないか）", site:"楽天トラベル", people:"大人1名・小学生1名",
+   raw:`楽天トラベルから宿泊施設様へのお知らせです。予約が成立いたしました。\nチェックイン日時 : 2026-08-30 15:00\n泊数 : 1泊\n人数              : 大人1人/子供1名(小学校 高学年1名)\n男女内訳    : 男性2名/女性0名\n宿泊者氏名   : みほん たろう\n会員氏名            : 見本 太郎\n■日毎明細\n[大人:35760円×1＝35760円＋小学校高学年:2200円×1人＝37960円]`}
 ];
 function runTests(){
   const cur=document.getElementById("rawmail").value; // 現在の入力を退避
