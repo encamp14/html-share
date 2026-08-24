@@ -457,14 +457,21 @@ function parseMail(){
     [...sumLine.matchAll(/(?:小学生|小学校[低中高]学年|中学生|高校生|子供|こども|児童)[\s　]*(\d+)/g)].forEach(m=>kids+=parseInt(m[1]));
     [...sumLine.matchAll(/(?:幼児|乳児|未就学児?)[\s　]*(\d+)/g)].forEach(m=>infants+=parseInt(m[1]));
   } else {
-    // 各室の「大人：N名」「小学生：N名」「幼児：N名」だけを厳密に数える。
-    // ★キーワードの直後に（コロン/空白をはさんで）数字＋名/人 が来る形だけを拾うので、
-    //   じゃらんの料金明細「（小学生）× 2名」やプラン名「小学生半額」は数えない＝倍にならない。
-    //   複数室（1部屋目・2部屋目…）は各室の「大人：N名」を合算する。
-    const sumBy=re=>{let n=0;[...t.matchAll(re)].forEach(m=>n+=parseInt(m[1]));return n;};
-    adults = sumBy(/大人[\s　]*[:：]?[\s　]*(\d+)[\s　]*[名人]/g);
-    kids   = sumBy(/(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[\s　]*[:：]?[\s　]*(\d+)[\s　]*[名人]/g);
-    infants= sumBy(/(?:幼児|乳児|未就学児?)[\s　]*[:：]?[\s　]*(\d+)[\s　]*[名人]/g);
+    // ★お部屋割りの部分【だけ】で人数を数える（料金明細やプラン名の「×2名」を誤カウントしないため）。
+    //  ①料金・決済セクション以降を切り落とす → ②お部屋割り/部屋数の位置から後ろに絞る
+    //  ③各区分（大人/小学生/幼児）ごとに、同じ行内でキーワードの後にある最初の「N名」を合算する。
+    //  これで「小学生, キッズプレート/夕朝食付, 寝具:あり:2名」「幼児・布団のみ：1名」のように
+    //  途中に説明が入っても正しく数えられ、料金明細やプラン名（小学生半額 等）は数えない。複数室は合算。
+    let region=t;
+    const priceIdx=region.search(/▼\s*ご宿泊料金|■\s*料金|■\s*決済|■\s*ポイント|■\s*クーポン|料金明細|【料金/);
+    if(priceIdx>0) region=region.slice(0,priceIdx);
+    const roomIdx=region.search(/▼?\s*お?部屋割り|部屋数[\s　]*[:：]|ご利用人数|人数内訳/);
+    if(roomIdx>=0) region=region.slice(roomIdx);
+    // キーワード → 同じ行内で最初に現れる「数字＋名/人」（間に説明が入ってもOK。ただし別区分の名/人はまたがない）
+    const sumRe=pat=>{let n=0,m;const r=new RegExp(pat,"g");while(m=r.exec(region))n+=parseInt(m[1]);return n;};
+    adults = sumRe("大人[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    kids   = sumRe("(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    infants= sumRe("(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
   }
   let people=[];
   if(adults)people.push("大人"+adults+"名");
