@@ -427,6 +427,50 @@ function hasPickup(t){
   }
   return false; // 送迎の記載なし（じゃらん・楽天など）＝判定不能→送迎なし扱い（安全運転の一文を入れる）
 }
+// どの予約サイトの通知かを自動判定（489banはプラン名に「じゃらん」を含むことがあるので必ず先に判定）
+function detectSite(t){
+  return /▼\s*お部屋割り|下記のとおり宿泊予約|489ban|\[予約番号\]/.test(t) ? "489ban（自社予約サイト・HP直予約）"
+    : /じゃらん|宿泊代表者氏名（カナ）|じゃらんクーポン/.test(t) ? "じゃらん"
+    : /一休|ikyu|宿泊延べ人数/.test(t) ? "一休"
+    : /楽天トラベル|rakuten/i.test(t) ? "楽天トラベル"
+    : /Airbnb|エアビー/i.test(t) ? "Airbnb"
+    : /なっぷ|nap-?camp/i.test(t) ? "なっぷ"
+    : "";
+}
+// 人数の読み取りは【サイトごとに「読む場所」を1か所に固定】する。
+// こうすることで、同じ人数が通知内で何度も出てきても倍にならず、あるサイトの調整が他サイトに波及しない。
+function countGuests(t, site){
+  const scan=(str,re)=>{let n=0,m;const r=new RegExp(re,"g");while(m=r.exec(str))n+=parseInt(m[1]);return n;};
+  const kidRe   ="(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生)[^0-9]{0,4}(\\d+)";
+  const kidUmbRe="(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生|子供|こども|児童)[^0-9]{0,4}(\\d+)";
+  const infRe   ="(?:幼児|乳児|未就学児?)[^0-9]{0,4}(\\d+)";
+  let adults=0,kids=0,infants=0;
+  if(site==="楽天トラベル"||site==="一休"){
+    // 【まとめ行だけ】を読む（料金明細・男女内訳は読まない）。例:「人数：大人1人/子供1名(小学校 高学年1名)」
+    const line=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[""])[0];
+    adults=parseInt((line.match(/大人[\s　]*(\d+)/)||[])[1]||0);
+    const paren=(line.match(/[(（]([^)）]*)[)）]/)||[])[1]||"";
+    if(paren && (scan(paren,kidRe)+scan(paren,infRe))>0){
+      // 括弧内に小学生/幼児の内訳があればそれで数える（子供の総数と二重にしない）
+      kids=scan(paren,kidRe); infants=scan(paren,infRe);
+    } else {
+      const body=line.replace(/[(（][^)）]*[)）]/g,"");
+      kids=scan(body,kidUmbRe); infants=scan(body,infRe);
+    }
+  } else {
+    // 489ban / じゃらん / HP / 不明：【お部屋割りの部分だけ】を読む（料金明細を最初から切り離す）。
+    // ①料金・決済以降を切り落とす→②お部屋割り/部屋数から後ろに絞る→③各区分の後ろにある最初のN名を合算（複数室は合算）。
+    let region=t;
+    const priceIdx=region.search(/▼\s*ご宿泊料金|■\s*料金|■\s*決済|■\s*ポイント|■\s*クーポン|料金明細|【料金/);
+    if(priceIdx>0) region=region.slice(0,priceIdx);
+    const roomIdx=region.search(/▼?\s*お?部屋割り|部屋数[\s　]*[:：]|ご利用人数|人数内訳/);
+    if(roomIdx>=0) region=region.slice(roomIdx);
+    adults = scan(region,"大人[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    kids   = scan(region,"(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    infants= scan(region,"(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+  }
+  return {adults,kids,infants};
+}
 function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
@@ -449,43 +493,10 @@ function parseMail(){
    const dm=dl.match(/(\d{4})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
    if(dm) date=dm[1]+"/"+("0"+dm[2]).slice(-2)+"/"+("0"+dm[3]).slice(-2);
   }
-  // 人数（全角コロン・「名」「人」どちらも対応。行の最後の「◯名」を人数として拾う）
-  const lastCount=line=>{const ms=[...line.matchAll(/[:：](\d+)\s*[名人]/g)];return ms.length?parseInt(ms[ms.length-1][1]):0;};
-  let adults=0,kids=0,infants=0;
-  // 一休など「宿泊延べ人数：大人2名 + 子供1名」のまとめ行があれば優先（重複カウント防止）
-  const sumLine=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[])[0]||"";
-  if(/大人[\s　]*\d/.test(sumLine)){
-    adults=parseInt((sumLine.match(/大人[\s　]*(\d+)/)||[])[1]||0);
-    const scan=(str,re)=>{let n=0,m;const r=new RegExp(re,"g");while(m=r.exec(str))n+=parseInt(m[1]);return n;};
-    const kidRe="(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生)[^0-9]{0,4}(\\d+)";
-    const infRe="(?:幼児|乳児|未就学児?)[^0-9]{0,4}(\\d+)";
-    // 楽天「子供1名(小学校 高学年1名)」のように括弧内に内訳があれば、内訳で数える（子供の総数と二重にしない）
-    const paren=(sumLine.match(/[(（]([^)）]*)[)）]/)||[])[1]||"";
-    if(paren && (scan(paren,kidRe)+scan(paren,infRe))>0){
-      kids=scan(paren,kidRe); infants=scan(paren,infRe);
-    } else {
-      // 括弧なし（一休など）＝子供の総数をそのまま数える
-      const body=sumLine.replace(/[(（][^)）]*[)）]/g,"");
-      kids=scan(body,"(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生|子供|こども|児童)[^0-9]{0,4}(\\d+)");
-      infants=scan(body,infRe);
-    }
-  } else {
-    // ★お部屋割りの部分【だけ】で人数を数える（料金明細やプラン名の「×2名」を誤カウントしないため）。
-    //  ①料金・決済セクション以降を切り落とす → ②お部屋割り/部屋数の位置から後ろに絞る
-    //  ③各区分（大人/小学生/幼児）ごとに、同じ行内でキーワードの後にある最初の「N名」を合算する。
-    //  これで「小学生, キッズプレート/夕朝食付, 寝具:あり:2名」「幼児・布団のみ：1名」のように
-    //  途中に説明が入っても正しく数えられ、料金明細やプラン名（小学生半額 等）は数えない。複数室は合算。
-    let region=t;
-    const priceIdx=region.search(/▼\s*ご宿泊料金|■\s*料金|■\s*決済|■\s*ポイント|■\s*クーポン|料金明細|【料金/);
-    if(priceIdx>0) region=region.slice(0,priceIdx);
-    const roomIdx=region.search(/▼?\s*お?部屋割り|部屋数[\s　]*[:：]|ご利用人数|人数内訳/);
-    if(roomIdx>=0) region=region.slice(roomIdx);
-    // キーワード → 同じ行内で最初に現れる「数字＋名/人」（間に説明が入ってもOK。ただし別区分の名/人はまたがない）
-    const sumRe=pat=>{let n=0,m;const r=new RegExp(pat,"g");while(m=r.exec(region))n+=parseInt(m[1]);return n;};
-    adults = sumRe("大人[^\\n名人]*?(\\d+)[\\s　]*[名人]");
-    kids   = sumRe("(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
-    infants= sumRe("(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
-  }
+  // 予約サイトを自動判定 → サイトごとに決めた場所【だけ】から人数を読む（倍・半分を構造的に防ぐ）
+  const site=detectSite(t); window.detectedSite=site;
+  const gc=countGuests(t,site);
+  let adults=gc.adults, kids=gc.kids, infants=gc.infants;
   let people=[];
   if(adults)people.push("大人"+adults+"名");
   if(kids)people.push("小学生"+kids+"名");
@@ -522,17 +533,8 @@ function parseMail(){
   const pastLine=(t.match(/過去のご宿泊[^\n]*/)||[""])[0];
   const isRepeat=/過去に宿泊|以前.*宿泊|\d回目|リピート/.test(pastLine);
   setV("f-pet",pet); setV("f-celeb",celeb); setV("f-pickup",hasPickup(t)?"あり":""); setV("f-repeat",isRepeat?"あり":""); setV("f-plan",plan);
-  // 警告
+  // 警告（site は上部で判定済み）
   const w=[];
-  // どの予約サイトの通知かを自動判定（489banはプラン名に「じゃらん」を含むことがあるので必ず先に判定）
-  const site = /▼\s*お部屋割り|下記のとおり宿泊予約|489ban|\[予約番号\]/.test(t) ? "489ban（自社予約サイト・HP直予約）"
-    : /じゃらん|宿泊代表者氏名（カナ）|じゃらんクーポン/.test(t) ? "じゃらん"
-    : /一休|ikyu|宿泊延べ人数/.test(t) ? "一休"
-    : /楽天トラベル|rakuten/i.test(t) ? "楽天トラベル"
-    : /Airbnb|エアビー/i.test(t) ? "Airbnb"
-    : /なっぷ|nap-?camp/i.test(t) ? "なっぷ"
-    : "";
-  window.detectedSite = site;
   if(site) w.push("📮 <strong>"+site+"</strong>の予約通知として読み取りました。人数・宛名・宿泊日が合っているか、ひと目ご確認ください。");
   if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
