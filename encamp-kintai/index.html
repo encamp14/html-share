@@ -947,6 +947,7 @@ function rebuildDash() {
 // この端末の全データを「共有データ」として送る（源泉）
 function pushState() {
   if (!syncUrl) return;
+  window.__lastPush = Date.now();   // 送った時刻を記録（直後は自動取り込みを控える＝打刻の消失防止）
   const blob = JSON.stringify({ employees, records, shifts, board, sales, fixLog, office, depts, sites, punchEvents, rawPunches, terms, commutes, confirms, editors, pin, devLock });
   sendToSheet({ type: 'state', blob });
 }
@@ -1457,6 +1458,8 @@ function openAdmin() {
   updateSyncStatus();
   renderSummary(); renderFix(); renderShift(); renderBoard(); renderSales(); renderDow(); renderFixLog();
   show('adminModal');
+  // 管理画面を開いた瞬間に最新を取り込む（修正の前に必ず新鮮にする＝上書き事故を防ぐ）
+  if (syncUrl && (Date.now() - (window.__lastPush || 0) >= 10000)) { window.__lastPullStart = Date.now(); pullState(false); }
 }
 
 function adminTab(name) {
@@ -2622,6 +2625,24 @@ applyDeviceLock();   // 端末しばりON＆未登録ならロック画面を出
 if (syncUrl && employees.length === 0 && punchEvents.length === 0) {
   pullState(false);
 }
+
+/* ===== 自動同期：ほうっておいても最新になる（ボタンを押さなくてよい） ===== */
+function autoPull() {
+  if (!syncUrl) return;
+  // 管理画面で編集中は取り込まない（入力中の内容を消さないため）
+  if (document.getElementById('adminModal').classList.contains('show')) return;
+  // 送った直後は少し待つ（自分の打刻がまだ届いてない状態で取り込んで消さないため）
+  if (Date.now() - (window.__lastPush || 0) < 10000) return;
+  // 取り込みの重複を避ける
+  if (Date.now() - (window.__lastPullStart || 0) < 4000) return;
+  window.__lastPullStart = Date.now();
+  pullState(false);
+}
+setInterval(autoPull, 25000);                          // 25秒ごとに自動で最新を取り込む
+document.addEventListener('visibilitychange', () => {  // 画面を開き直した瞬間にも取り込む
+  if (document.visibilityState === 'visible') autoPull();
+});
+window.addEventListener('focus', autoPull);
 </script>
 </body>
 </html>
