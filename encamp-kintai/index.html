@@ -1139,10 +1139,17 @@ function renderStatus(code) {
   badge.textContent = st;
   badge.className = 'sb-badge ' + (st === '勤務中' ? 'st-work' : st === '休憩中' ? 'st-break' : st === '退勤済' ? 'st-out' : 'st-none');
   // 開いているセッション（未退勤の出勤）があればその勤務日、無ければ今日の勤務日
-  const wd = openSessionWorkDate(code) || workDateOf(new Date());
+  const todayWd = workDateOf(new Date());
+  const openWd = openSessionWorkDate(code);
+  const stale = !!openWd && openWd !== todayWd;      // 前の日の退勤を押し忘れて開きっぱなし
+  const wd = openWd || todayWd;
   const ev = eventsOf(code, wd);
-  today.textContent = ev.length ? ('勤務日 ' + wd.slice(5) + '：' + ev.map(e => e.type + ' ' + e.dateTimeStr.slice(11, 16)).join('　')) : '本日の打刻はまだありません';
-  en('btnIn', st === '未出勤' || st === '退勤済');   // 出勤（中抜けの再開も）
+  if (stale) {
+    today.innerHTML = '<span style="color:#c0392b;font-weight:bold">⚠️ ' + wd.slice(5) + ' の退勤がまだ押されていません。<br>今日の出勤なら「出勤」を、その日の退勤なら「退勤」を押してください（時刻は管理画面であとから直せます）</span>';
+  } else {
+    today.textContent = ev.length ? ('勤務日 ' + wd.slice(5) + '：' + ev.map(e => e.type + ' ' + e.dateTimeStr.slice(11, 16)).join('　')) : '本日の打刻はまだありません';
+  }
+  en('btnIn', st === '未出勤' || st === '退勤済' || stale);   // 出勤（中抜けの再開／前日の押し忘れ時も）
   en('btnOut', st === '勤務中');                     // 退勤
   en('btnBS', st === '勤務中');                      // 休憩開始
   en('btnBE', st === '休憩中');                      // 休憩終了
@@ -1177,7 +1184,9 @@ function punch(type) {
   }
   const now = new Date();
   const st = currentState(code);
-  const okMap = { '出勤': (st === '未出勤' || st === '退勤済'), '退勤': st === '勤務中', '休憩開始': st === '勤務中', '休憩終了': st === '休憩中' };
+  const openWd0 = openSessionWorkDate(code);
+  const staleOpen = !!openWd0 && openWd0 !== workDateOf(now);   // 前日の退勤を押し忘れて開きっぱなし
+  const okMap = { '出勤': (st === '未出勤' || st === '退勤済' || staleOpen), '退勤': st === '勤務中', '休憩開始': st === '勤務中', '休憩終了': st === '休憩中' };
   if (!okMap[type]) { setMsg('いまは「' + type + '」は押せません（現在：' + st + '）', false); renderStatus(code); return; }
   // 連打防止：同じ人・同じ種別が5秒以内なら拒否
   if (punchEvents.some(e => e.code === code && e.type === type && (now.getTime() - e.dt) < 5000)) {
@@ -1206,10 +1215,9 @@ function commitPunch(ev, rawEv, emp, type, now) {
   rebuildRecords();
   syncDakoku();
   syncRawPunch();
-  renderStatus(ev.code);
   // 打刻する人には場所のことは見せない（職場外でも普通に「記録しました」だけ。確認は管理画面で）
   setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました', true);
-  scheduleReset();
+  lockAfterPunch();   // 1回押したら即・名前選択に戻す（退勤→出勤の連続押しによる誤爆を防ぐ）
 }
 
 // 打刻に位置情報（GPS）を付ける。許可がないと空のまま（打刻自体は成功）。ブロックはしない
@@ -1245,6 +1253,16 @@ function resetScreen() {
 function scheduleReset() {
   if (resetTimer) clearTimeout(resetTimer);
   resetTimer = setTimeout(resetScreen, 5000);
+}
+// 打刻した直後：すぐ名前選択に戻す（同じ人に退勤→出勤と連続で押せてしまう誤爆を防ぐ）
+function lockAfterPunch() {
+  currentCode = null;                                   // 選択を解除＝次はもう一度名前を選ばないと押せない
+  document.getElementById('codeInput').value = '';
+  document.getElementById('dispCode').textContent = '';
+  document.getElementById('dispName').textContent = '';
+  renderStatus(null);                                   // 全ボタンをグレーに（押せない状態に）
+  if (resetTimer) clearTimeout(resetTimer);
+  resetTimer = setTimeout(() => setMsg('', true), 4000); // 「記録しました」を4秒だけ見せてから消す
 }
 
 /* ================= 名前えらび（社員一覧） ================= */
