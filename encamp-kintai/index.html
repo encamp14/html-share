@@ -1262,7 +1262,7 @@ function lockAfterPunch() {
   document.getElementById('dispName').textContent = '';
   renderStatus(null);                                   // 全ボタンをグレーに（押せない状態に）
   if (resetTimer) clearTimeout(resetTimer);
-  resetTimer = setTimeout(() => setMsg('', true), 4000); // 「記録しました」を4秒だけ見せてから消す
+  resetTimer = setTimeout(() => setMsg('', true), 3000); // 「記録しました」を3秒だけ見せてから消す
 }
 
 /* ================= 名前えらび（社員一覧） ================= */
