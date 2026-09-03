@@ -1208,16 +1208,51 @@ function punch(type) {
 }
 
 function commitPunch(ev, rawEv, emp, type, now) {
-  punchEvents.push(ev);                 // 最終（修正で書き換わる版）
-  rawPunches.push(rawEv);               // 原本（本当に押した打刻・二度と書き換えない）
-  save(LS_EVENTS, punchEvents);
-  save(LS_RAWPUNCH, rawPunches);
-  rebuildRecords();
-  syncDakoku();
-  syncRawPunch();
-  // 打刻する人には場所のことは見せない（職場外でも普通に「記録しました」だけ。確認は管理画面で）
-  setMsg(emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました', true);
-  lockAfterPunch();   // 1回押したら即・名前選択に戻す（退勤→出勤の連続押しによる誤爆を防ぐ）
+  // 押した瞬間に画面をロック（連続押し防止）＋「記録中…」表示
+  currentCode = null;
+  document.getElementById('codeInput').value = '';
+  document.getElementById('dispCode').textContent = '';
+  document.getElementById('dispName').textContent = '';
+  renderStatus(null);
+  const okMsg = emp.name + ' さん　' + type + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' を記録しました';
+  setMsg(emp.name + ' さん　' + type + ' を記録中…', true);
+  // 記録を確定して送る（共有の最新に、自分の打刻を"足して"保存する）
+  const finalize = () => {
+    punchEvents.push(ev);                 // 最終（修正で書き換わる版）
+    rawPunches.push(rawEv);               // 原本（本当に押した打刻・二度と書き換えない）
+    save(LS_EVENTS, punchEvents);
+    save(LS_RAWPUNCH, rawPunches);
+    rebuildRecords();
+    syncDakoku();
+    syncRawPunch();
+    setMsg(okMsg, true);
+    if (resetTimer) clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => setMsg('', true), 3000);
+  };
+  if (!syncUrl) { finalize(); return; }
+  // ★送る前に共有の最新を取り込む＝他の人の修正・打刻を上書きして消さない（取り込めなくても必ず記録する）
+  let done = false;
+  const cb = '__commitPull_' + now.getTime() + Math.floor(Math.random() * 1000);
+  const go = (obj) => {
+    if (done) return; done = true;
+    try {
+      if (obj && Array.isArray(obj.punchEvents)) {
+        punchEvents = obj.punchEvents;                                   // 最新に置き換えてから自分の分を足す
+        if (Array.isArray(obj.rawPunches)) rawPunches = obj.rawPunches;
+        if (Array.isArray(obj.employees) && obj.employees.length) employees = obj.employees;
+        if (obj.fixLog) fixLog = obj.fixLog;
+        if (obj.confirms) confirms = obj.confirms;
+      }
+    } catch (e) {}
+    try { delete window[cb]; } catch (e) {}
+    finalize();
+  };
+  window[cb] = go;
+  const sc = document.createElement('script');
+  sc.src = syncUrl + '?action=pull&callback=' + cb + '&t=' + now.getTime();
+  sc.onerror = () => go(null);
+  document.body.appendChild(sc);
+  setTimeout(() => go(null), 4000);   // 4秒以内に来なければローカルのまま記録（通信不良でも打刻は失わない）
 }
 
 // 打刻に位置情報（GPS）を付ける。許可がないと空のまま（打刻自体は成功）。ブロックはしない
