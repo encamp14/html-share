@@ -445,18 +445,16 @@ function countGuests(t, site){
   const kidUmbRe="(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生|子供|こども|児童)[^0-9]{0,4}(\\d+)";
   const infRe   ="(?:幼児|乳児|未就学児?)[^0-9]{0,4}(\\d+)";
   let adults=0,kids=0,infants=0;
+  let kidsLabel="小学生";
   if(site==="楽天トラベル"||site==="一休"){
-    // 【まとめ行だけ】を読む（料金明細・男女内訳は読まない）。例:「人数：大人1人/子供1名(小学校 高学年1名)」
+    // 【まとめ行だけ】を読む（料金明細・男女内訳は読まない）。例:「人数：大人2人/子供2名(内訳…)」
+    // 子供は「子供○名」の“総数”をそのまま使い、括弧内の幼児/小学生の内訳は分けずに「子供」でまとめる（美咲さん指定）。
     const line=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[""])[0];
-    adults=parseInt((line.match(/大人[\s　]*(\d+)/)||[])[1]||0);
-    const paren=(line.match(/[(（]([^)）]*)[)）]/)||[])[1]||"";
-    if(paren && (scan(paren,kidRe)+scan(paren,infRe))>0){
-      // 括弧内に小学生/幼児の内訳があればそれで数える（子供の総数と二重にしない）
-      kids=scan(paren,kidRe); infants=scan(paren,infRe);
-    } else {
-      const body=line.replace(/[(（][^)）]*[)）]/g,"");
-      kids=scan(body,kidUmbRe); infants=scan(body,infRe);
-    }
+    const noParen=line.replace(/[(（][^)）]*[)）]/g,"");   // 括弧の内訳は使わない
+    adults=parseInt((noParen.match(/大人[\s　]*(\d+)/)||[])[1]||0);
+    kids=scan(noParen,"(?:子供|こども|児童)[^0-9]{0,4}(\\d+)");
+    if(kids===0) kids=scan(noParen,kidRe)+scan(noParen,infRe); // 「子供」表記がなければ小学生等をまとめて子供扱い
+    infants=0; kidsLabel="子供";
   } else {
     // 489ban / じゃらん / HP / 不明：【お部屋割りの部分だけ】を読む（料金明細を最初から切り離す）。
     // ①料金・決済以降を切り落とす→②お部屋割り/部屋数から後ろに絞る→③各区分の後ろにある最初のN名を合算（複数室は合算）。
@@ -469,7 +467,7 @@ function countGuests(t, site){
     kids   = scan(region,"(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
     infants= scan(region,"(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
   }
-  return {adults,kids,infants};
+  return {adults,kids,infants,kidsLabel};
 }
 function parseMail(){
   const t=document.getElementById("rawmail").value;
@@ -497,9 +495,10 @@ function parseMail(){
   const site=detectSite(t); window.detectedSite=site;
   const gc=countGuests(t,site);
   let adults=gc.adults, kids=gc.kids, infants=gc.infants;
+  const kidsLabel=gc.kidsLabel||"小学生"; // 楽天/一休=「子供」、489ban/じゃらん=「小学生」
   let people=[];
   if(adults)people.push("大人"+adults+"名");
-  if(kids)people.push("小学生"+kids+"名");
+  if(kids)people.push(kidsLabel+kids+"名");
   if(infants)people.push("幼児"+infants+"名");
   const total=(parseInt(adults)||0)+kids+infants;
   // 住所 → 都道府県（標高のたとえ用）と 出発地の市（本文用）
@@ -896,12 +895,14 @@ const TEST_CASES=[
    raw:`GLAMPINGBASE enCamp様\n下記のとおり宿泊予約がありました\n[予約番号]:0002\n[プラン]:【じゃらんのお得な10日間】小学生半額\n[宿泊日]:2026/10/03(土)から1泊\n[部屋数]:1室\n▼お部屋割り　====\n　1部屋目\n　　大人:2名\n　　小学生, キッズプレート/夕朝食付, 寝具:あり:2名\n▼予約者基本情報　====\n[氏名]:見本花子 様\n[メール]:sample@example.com\n▼ご宿泊料金　====\n　1部屋目\n　　小学生, キッズプレート/夕朝食付, 寝具:あり\n　　　1,650円 × 2 = 3,300円\n小計:61,900円`},
   {name:"じゃらん 幼児・布団のみ（幼児を数え漏れないか）", site:"じゃらん", people:"大人2名・小学生1名・幼児1名",
    raw:`宿泊代表者氏名　　　　：見本次郎　様\n宿泊代表者氏名（カナ）：ミホンジロウ　様\nじゃらんクーポン\n部屋数　　：1室\n１部屋目　：大人：2名\n　　　　　　小学生：1名\n　　　　　　幼児・布団のみ：1名\n[宿泊日]:2026/08/26から1泊\n■決済情報\n現地精算\n■料金詳細：\n　22,761円（大人：男 1、女 1）×  2名＝ 45,522円\n　2,970円（小学生）× 1名＝2,970円\n　0円（幼児・布団のみ）× 1名＝0円\n小計：48,492円`},
-  {name:"一休 まとめ行（別分岐でも正しいか）", site:"一休", people:"大人2名・小学生1名",
+  {name:"一休 まとめ行（子供でまとめるか）", site:"一休", people:"大人2名・子供1名",
    raw:`一休.com\n宿泊延べ人数：大人2名 + 子供1名\n氏名：見本三郎 様\n宿泊日 2026/09/01`},
   {name:"複数室（各室を合算できるか）", site:"489ban（自社予約サイト・HP直予約）", people:"大人5名",
    raw:`GLAMPINGBASE enCamp様\n下記のとおり宿泊予約がありました\n[宿泊日]:2026/08/10から1泊\n▼お部屋割り　====\n　1部屋目：大人：2名\n　2部屋目：大人：3名\n▼ご宿泊料金　====\n　大人\n　1000円 × 5`},
-  {name:"楽天 まとめ行＋括弧内訳（子供と内訳を二重にしないか）", site:"楽天トラベル", people:"大人1名・小学生1名",
+  {name:"楽天 大人+子供（子供でまとめ・括弧内訳に釣られないか）", site:"楽天トラベル", people:"大人1名・子供1名",
    raw:`楽天トラベルから宿泊施設様へのお知らせです。予約が成立いたしました。\nチェックイン日時 : 2026-08-30 15:00\n泊数 : 1泊\n人数              : 大人1人/子供1名(小学校 高学年1名)\n男女内訳    : 男性2名/女性0名\n宿泊者氏名   : みほん たろう\n会員氏名            : 見本 太郎\n■日毎明細\n[大人:35760円×1＝35760円＋小学校高学年:2200円×1人＝37960円]`},
+  {name:"楽天 大人2子供2（内訳=小学生1+幼児1でも子供2でまとめるか）", site:"楽天トラベル", people:"大人2名・子供2名",
+   raw:`楽天トラベルから宿泊施設様へのお知らせです。\n予約番号    : RYtest2\n泊数 : 1泊\n人数              : 大人2人/子供2名(小学校 低学年1名/幼児 食事・布団不要1名)\n男女内訳    : 男性3名/女性1名\n部屋タイプ   : (sun)ドームテント8M (最大12名)\n※ハイシーズンは大人3名以上から予約可能な場合がございます。\n宿泊者氏名   : みほん たろう\n会員氏名            : 見本 太郎`},
   {name:"楽天 大人のみ（部屋説明の『大人3名以上』『最大10名』に釣られないか）", site:"楽天トラベル", people:"大人7名",
    raw:`楽天トラベルから宿泊施設様へのお知らせです。\n予約番号    : RYtest\n泊数 : 1泊\n人数              : 大人7人\n男女内訳    : 男性7名/女性0名\n部屋タイプ   : (richy)【愛犬OK／最大10名／冷暖房完備】シェルテント\nダブルベット2台、ロフト※ハイシーズンは大人3名以上から予約可能な場合がございます。\n宿泊者氏名   : みほん たろう\n会員氏名            : 見本 太郎\n■日毎明細\n[大人:22290円×7＝156030円]`}
 ];
