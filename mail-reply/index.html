@@ -61,7 +61,7 @@
 <header>
   <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
   <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
-  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-15 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
+  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-15b ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
 </header>
 
 <div class="tabs">
@@ -211,6 +211,14 @@
 <!-- ============ 使い方 ============ -->
 <div class="panel" id="p-help">
   <h2>❓ 使い方（3ステップ）</h2>
+  <div class="card" style="border:1px solid var(--rose);background:var(--rose-bg);margin:0 0 14px">
+    <label style="font-weight:600;color:var(--rose-dark)">🔁 設定のコピー（別の端末へ／公開版に反映）</label>
+    <div class="note" style="margin:3px 0 6px">季節の一文・標高のたとえ・季節メモなど、このブラウザで編集した設定を書き出し／読み込みできます。<strong>別のパソコンに移すとき</strong>や、<strong>みんなが見る公開版に反映したいとき（書き出してClaudeに渡す）</strong>に使います。</div>
+    <div class="toolbar" style="margin:0">
+      <button class="btn btn-main btn-small" onclick="exportSettings()">📤 設定を書き出す（コピー）</button>
+      <button class="btn btn-sub btn-small" onclick="importSettings()">📥 設定を読み込む（貼り付け）</button>
+    </div>
+  </div>
   <ol class="steps">
     <li>予約通知メールをまるごとコピーして、左の枠に貼って「🔍 読み取る」</li>
     <li>読み取り結果を確認（間違っていたら直す）→「✨ 下書きを作る」</li>
@@ -1004,6 +1012,31 @@ function resetClimate(){
   renderClimate();
   document.getElementById("climate-msg").textContent="柳さんの元の文に戻しました";
   setTimeout(()=>document.getElementById("climate-msg").textContent="",2500);
+}
+
+// ================= 設定の書き出し／読み込み =================
+function exportSettings(){
+  const keys=["mk_season","mk_climate","mk_height","mk_faq","mk_spots","mk_dateov"];
+  const data={};
+  keys.forEach(k=>{const v=localStorage.getItem(k); if(v!=null) data[k]=v;});
+  if(Object.keys(data).length===0){ alert("書き出す設定がまだありません。\n各タブで編集して「💾 保存」を押すと、ここから書き出せるようになります。"); return; }
+  const blob=JSON.stringify({app:"mail-reply",saved:new Date().toISOString(),data:data});
+  navigator.clipboard.writeText(blob).then(
+    ()=>alert("設定を書き出してコピーしました。\n・公開版に反映したいとき → Claudeのチャットに貼り付けてください。\n・別の端末に移すとき → その端末でこのアプリを開き「読み込む」に貼り付けてください。"),
+    ()=>{ prompt("下の内容を全部コピーしてください：", blob); }
+  );
+}
+function importSettings(){
+  const s=prompt("書き出した設定（{ で始まるかたまり）を貼り付けてください：");
+  if(!s) return;
+  try{
+    const obj=JSON.parse(s);
+    const data=obj.data||obj;
+    let n=0;
+    Object.keys(data).forEach(k=>{ if(/^mk_/.test(k)){ localStorage.setItem(k, typeof data[k]==="string"?data[k]:JSON.stringify(data[k])); n++; } });
+    alert(n+"件の設定を読み込みました。ページを再読み込みします。");
+    location.reload();
+  }catch(e){ alert("読み込めませんでした。貼り付けた内容が正しいか確認してください。"); }
 }
 
 // ================= 標高のたとえ =================
