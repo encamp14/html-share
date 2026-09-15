@@ -61,13 +61,14 @@
 <header>
   <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
   <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
-  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-09b ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
+  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-15 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
 </header>
 
 <div class="tabs">
   <div class="tab active" data-p="make">✉️ メールを作る</div>
   <div class="tab" data-p="season">🗓 季節メモを育てる</div>
   <div class="tab" data-p="climate">🍂 季節の一文</div>
+  <div class="tab" data-p="height">🗻 標高のたとえ</div>
   <div class="tab" data-p="spots">🗺 おすすめ案内</div>
   <div class="tab" data-p="faq">💬 質問に返信</div>
   <div class="tab" data-p="pdca">📈 改善ログ（PDCA）</div>
@@ -154,6 +155,24 @@
     <button class="btn btn-main" onclick="saveSeason()">💾 季節メモを保存</button>
     <button class="btn btn-sub btn-small" onclick="clearSeasonInputs()">全部クリア</button>
     <span id="season-msg" class="note"></span>
+  </div>
+</div>
+
+<!-- ============ 標高のたとえ ============ -->
+<div class="panel" id="p-height">
+  <h2>🗻 標高のたとえ（お客様の都道府県ごとに設定）</h2>
+  <p class="note">本文の「当施設は<strong>◯◯</strong>にあるので、これより1〜2度低くなります」の◯◯部分です。出発地の<strong>都道府県</strong>ごとに、標高約830mを表す<strong>たとえ</strong>（例：ミッドランドスクエアの3.4倍／高野山付近）を設定できます。</p>
+  <div class="okbox">📝 入れるのは<strong>たとえの部分だけ</strong>でOK（アプリが「標高約830メートルの場所（　）」の形に整えます）。<br>・<strong>空欄</strong>＝下の「その他の県」の言い方（スカイツリー基準）になります。<br>・<strong>「なし」</strong>と入れる＝たとえを付けず「標高約830メートルの場所」とだけ言います（例：山梨）。<br>・<strong>長野</strong>は地元あつかいで、この設定は使いません。</div>
+  <div class="card" style="border:1px solid var(--line);margin:10px 0">
+    <label style="font-weight:600">その他の県（未登録＝下の表が空欄の県）の言い方</label>
+    <div class="note" style="margin:3px 0 6px">ここは「標高約830メートルの場所」まで含めた文をそのまま入れます。</div>
+    <textarea id="he-other" rows="2"></textarea>
+  </div>
+  <table id="height-table"></table>
+  <div class="toolbar">
+    <button class="btn btn-main" onclick="saveHeight()">💾 標高のたとえを保存</button>
+    <button class="btn btn-sub btn-small" onclick="resetHeight()">元の内容に戻す</button>
+    <span id="height-msg" class="note"></span>
   </div>
 </div>
 
@@ -357,26 +376,23 @@ const MATSU_NORMALS={
 };
 
 // 標高約830mの言い回し辞典（都道府県→そのまま本文に入る一文。数字は半角）
-// 「当施設は〔この文〕にあるので、これより1～2度低くなります。」の〔〕に入る。
-// 神奈川の横浜・川崎・横須賀＝ランドマークタワー、その他の関東＋未登録県＝スカイツリー、長野・山梨＝比較なし。
-const HEIGHT_CLAUSE={
- "静岡":"標高約830メートルの場所（浜松アクトタワーの3.9倍）",
- "愛知":"標高約830メートルの場所（ミッドランドスクエアの3.4倍）",
- "大阪":"標高約830メートルの場所（あべのハルカスの2.8倍）",
- "兵庫":"標高約830メートルの場所（シティタワー神戸三宮の4.4倍）",
- "京都":"標高約830メートル（愛宕山の9合目あたり）の場所",
- "三重":"標高約830メートルの場所（四日市港ポートビルの8.3倍・青山高原付近）",
- "滋賀":"標高約830メートル（比叡山の山頂付近）の場所",
- "岐阜":"標高約830メートルの場所（岐阜シティ・タワー43の5.1倍）",
- "新潟":"標高約830メートルの場所（朱鷺メッセの5.9倍）",
- "富山":"標高約830メートルの場所（タワー111の6.9倍）",
- "石川":"標高約830メートルの場所（ポルテ金沢の6.4倍・白山高山植物園付近）",
- "福井":"標高約830メートルの場所（FUKUMACHI BLOCKの6.9倍）",
- "和歌山":"標高約830メートル（高野山付近）の場所",
- "奈良":"標高約830メートル（天川村・洞川温泉付近）の場所",
- "香川":"標高約830メートルの場所（高松シンボルタワーの5.5倍）",
- "福岡":"標高約830メートルの場所（福岡タワーの3.5倍）"
+// 標高のたとえ：出発地の県ごとに「標高約830m＝○○」のたとえを本文に出す。
+// 「🗻 標高のたとえ」タブで県ごとに自分で編集できる（このMacに保存）。空欄＝スカイツリー基準／「なし」＝たとえを付けない。
+const PREFS47=["北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川","新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良","和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分","宮崎","鹿児島","沖縄"];
+const DEFAULT_HEIGHT_OTHER="東京スカイツリーのてっぺんより200メートル高い標高約830メートルの場所";
+// 各県の「たとえ」だけを持つ（アプリが「標高約830メートルの場所（○○）」の形に整える）。「なし」＝たとえを付けない。
+const DEFAULT_HEIGHT={
+ "神奈川":"横浜ランドマークタワーの2.8倍","新潟":"朱鷺メッセの5.9倍","富山":"タワー111の6.9倍",
+ "石川":"ポルテ金沢の6.4倍・白山高山植物園付近","福井":"FUKUMACHI BLOCKの6.9倍","山梨":"なし",
+ "岐阜":"岐阜シティ・タワー43の5.1倍","静岡":"浜松アクトタワーの3.9倍","愛知":"ミッドランドスクエアの3.4倍",
+ "三重":"四日市港ポートビルの8.3倍・青山高原付近","滋賀":"比叡山の山頂付近","京都":"愛宕山の9合目あたり",
+ "大阪":"あべのハルカスの2.8倍","兵庫":"シティタワー神戸三宮の4.4倍","奈良":"天川村・洞川温泉付近",
+ "和歌山":"高野山付近","香川":"高松シンボルタワーの5.5倍","福岡":"福岡タワーの3.5倍"
 };
+let heightData = JSON.parse(localStorage.getItem("mk_height")||"null") || {other:DEFAULT_HEIGHT_OTHER, prefs:JSON.parse(JSON.stringify(DEFAULT_HEIGHT))};
+if(!heightData.prefs) heightData.prefs={};
+if(!heightData.other) heightData.other=DEFAULT_HEIGHT_OTHER;
+for(const k in DEFAULT_HEIGHT){ if(!(k in heightData.prefs)) heightData.prefs[k]=DEFAULT_HEIGHT[k]; } // 未登録キーだけ補完
 
 // 松本の「日ごとの平年値」（気象庁ページの本物の数字。1991-2020）。全12ヶ月・全日。
 // 出典：気象庁 松本(block_no=47618) 日別平年値。2026-07取得。9月はスクショと全日一致で検証済。
@@ -607,10 +623,11 @@ function generate(){
   const isLocal=(from==="地元"||pref==="長野");
   // 標高の言い回し＝出発地の都道府県に合わせて変える（数字は半角）
   let hClause;
-  if(pref==="山梨") hClause="標高約830メートルの場所"; // 比較なし
-  else if(pref==="神奈川" && /(横浜|川崎|横須賀)/.test(from)) hClause="標高約830メートルの場所（横浜ランドマークタワーの2.8倍）";
-  else if(HEIGHT_CLAUSE[pref]) hClause=HEIGHT_CLAUSE[pref];
-  else hClause="東京スカイツリーのてっぺんより200メートル高い標高約830メートルの場所"; // 関東一円＋その他
+  // 「🗻 標高のたとえ」タブで県ごとに編集した内容を使う（空欄＝スカイツリー基準／「なし」＝たとえなし）
+  const tt=(heightData.prefs[pref]||"").trim();
+  if(tt==="なし"||tt==="比較なし") hClause="標高約830メートルの場所";
+  else if(tt) hClause="標高約830メートルの場所（"+tt+"）";
+  else hClause=heightData.other||"東京スカイツリーのてっぺんより200メートル高い標高約830メートルの場所";
   let heightSentence;
   if(isLocal) heightSentence="当施設は標高約830メートルの高台にありますので、平野部よりさらに1～2度低くなります。";
   else heightSentence="当施設は"+hClause+"にあるので、これより1～2度低くなります。";
@@ -989,6 +1006,34 @@ function resetClimate(){
   setTimeout(()=>document.getElementById("climate-msg").textContent="",2500);
 }
 
+// ================= 標高のたとえ =================
+function renderHeight(){
+  document.getElementById("he-other").value = heightData.other||"";
+  const tb=document.getElementById("height-table");
+  let h="<tr><th style='width:110px'>都道府県</th><th>標高約830mのたとえ（例：ミッドランドスクエアの3.4倍 ／ 高野山付近 ／ なし）</th></tr>";
+  PREFS47.forEach(p=>{
+    if(p==="長野") return; // 長野は地元あつかい（この設定は使わない）
+    const v=(heightData.prefs[p]||"").replace(/"/g,"&quot;");
+    h+=`<tr class="month-row"><td>${p}</td><td><input type="text" id="he-${p}" value="${esc(v)}" placeholder="空欄＝スカイツリー基準"></td></tr>`;
+  });
+  tb.innerHTML=h;
+}
+function saveHeight(){
+  heightData.other=document.getElementById("he-other").value.trim()||DEFAULT_HEIGHT_OTHER;
+  PREFS47.forEach(p=>{ if(p==="長野")return; const el=document.getElementById("he-"+p); if(el) heightData.prefs[p]=el.value.trim(); });
+  localStorage.setItem("mk_height",JSON.stringify(heightData));
+  document.getElementById("height-msg").textContent="✅ 保存しました（このMacの中だけ）";
+  setTimeout(()=>document.getElementById("height-msg").textContent="",2500);
+}
+function resetHeight(){
+  if(!confirm("標高のたとえを、元の内容に戻しますか？\n（今の書き換えは消えます）"))return;
+  heightData={other:DEFAULT_HEIGHT_OTHER, prefs:JSON.parse(JSON.stringify(DEFAULT_HEIGHT))};
+  localStorage.setItem("mk_height",JSON.stringify(heightData));
+  renderHeight();
+  document.getElementById("height-msg").textContent="元の内容に戻しました";
+  setTimeout(()=>document.getElementById("height-msg").textContent="",2500);
+}
+
 // ================= 改善ログ =================
 function renderLogs(){
   document.getElementById("log-list").innerHTML = logs.map((l,i)=>
@@ -1005,7 +1050,7 @@ function addLog(){
 }
 function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringify(logs));renderLogs();}
 
-renderSeason(); renderClimate(); renderLogs(); renderSpots(); renderFaq();
+renderSeason(); renderClimate(); renderHeight(); renderLogs(); renderSpots(); renderFaq();
 document.getElementById("output").addEventListener("input",updateCharCount);
 document.getElementById("spot-output").addEventListener("input",updateSpotCount);
 document.getElementById("faq-output").addEventListener("input",updateFaqCount);
