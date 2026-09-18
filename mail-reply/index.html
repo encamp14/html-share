@@ -64,7 +64,7 @@
 <header>
   <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
   <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
-  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-18 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
+  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-18b ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
 </header>
 
 <div class="tabs">
@@ -474,11 +474,12 @@ function countGuests(t, site){
   const kidUmbRe="(?:小学生|小学校[\\s　]*[低中高]学年|中学生|高校生|子供|こども|児童)[^0-9]{0,4}(\\d+)";
   const infRe   ="(?:幼児|乳児|未就学児?)[^0-9]{0,4}(\\d+)";
   let adults=0,kids=0,infants=0;
-  let kidsLabel="小学生";
+  let kidsLabel="小学生", evidence="";
   if(site==="楽天トラベル"||site==="一休"){
     // 【まとめ行だけ】を読む（料金明細・男女内訳は読まない）。例:「人数：大人2人/子供2名(内訳…)」
     // 子供は「子供○名」の“総数”をそのまま使い、括弧内の幼児/小学生の内訳は分けずに「子供」でまとめる（美咲さん指定）。
     const line=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[""])[0];
+    evidence=line.trim();
     const noParen=line.replace(/[(（][^)）]*[)）]/g,"");   // 括弧の内訳は使わない
     adults=parseInt((noParen.match(/大人[\s　]*(\d+)/)||[])[1]||0);
     kids=scan(noParen,"(?:子供|こども|児童)[^0-9]{0,4}(\\d+)");
@@ -495,8 +496,9 @@ function countGuests(t, site){
     adults = scan(region,"大人[^\\n名人]*?(\\d+)[\\s　]*[名人]");
     kids   = scan(region,"(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
     infants= scan(region,"(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    evidence=(region.match(/[^\n]*(?:大人|小学生|中学生|高校生|お子様|子供|こども|児童|幼児|乳児|未就学)[^\n]*?\d+[\s　]*[名人][^\n]*/g)||[]).map(s=>s.trim()).join("  ／  ");
   }
-  return {adults,kids,infants,kidsLabel};
+  return {adults,kids,infants,kidsLabel,evidence};
 }
 function parseMail(){
   const t=document.getElementById("rawmail").value;
@@ -563,7 +565,12 @@ function parseMail(){
   setV("f-pet",pet); setV("f-celeb",celeb); setV("f-pickup",hasPickup(t)?"あり":""); setV("f-repeat",isRepeat?"あり":""); setV("f-plan",plan);
   // 警告（site は上部で判定済み）
   const w=[];
-  if(site) w.push("📮 <strong>"+site+"</strong>の予約通知として読み取りました。人数・宛名・宿泊日が合っているか、ひと目ご確認ください。");
+  {
+    const peopleStr = people.length ? people.join("・") : "（人数を読み取れませんでした）";
+    const ev = gc.evidence ? "読み取り元：<span style='background:#fff3b0;padding:0 3px'>「"+esc(gc.evidence)+"」</span><br>" : "";
+    const siteStr = site ? "<strong>"+site+"</strong>の予約 ｜ " : "";
+    w.push("📮 "+siteStr+"人数 → <strong style='font-size:1.05rem'>"+peopleStr+"（合計"+total+"名）</strong><br>"+ev+"⚠️ <strong>この人数が通知と合っているか必ず確認を</strong>。違ったら下の「人数の内訳」を直すと本文にそのまま反映されます（合計は自動計算）。");
+  }
   if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
   if(window.isIkyu) w.push("✏️ 一休は返信を<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
@@ -1089,6 +1096,11 @@ function delLog(i){logs.splice(i,1);localStorage.setItem("mk_logs",JSON.stringif
 
 renderSeason(); renderClimate(); renderHeight(); renderLogs(); renderSpots(); renderFaq();
 document.getElementById("output").addEventListener("input",updateCharCount);
+// 「人数の内訳」を直したら合計を自動計算（直し忘れで数がズレないように）
+document.getElementById("f-people").addEventListener("input",e=>{
+  const nums=[...e.target.value.matchAll(/(\d+)\s*名/g)].map(m=>parseInt(m[1]));
+  if(nums.length) document.getElementById("f-total").value=nums.reduce((a,b)=>a+b,0);
+});
 document.getElementById("spot-output").addEventListener("input",updateSpotCount);
 document.getElementById("faq-output").addEventListener("input",updateFaqCount);
 if(todayNote&&todayNote.text) document.getElementById("today-text").value=todayNote.text;
