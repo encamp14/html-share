@@ -64,7 +64,7 @@
 <header>
   <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
   <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
-  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-18b ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
+  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-24 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
 </header>
 
 <div class="tabs">
@@ -475,28 +475,38 @@ function countGuests(t, site){
   const infRe   ="(?:幼児|乳児|未就学児?)[^0-9]{0,4}(\\d+)";
   let adults=0,kids=0,infants=0;
   let kidsLabel="小学生", evidence="";
+  // 指定したブロックの中【だけ】から大人/小学生/幼児を数える（ほかの場所は絶対に読まない）
+  const readBlock=(block)=>{
+    adults = scan(block,"大人[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    kids   = scan(block,"(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    infants= scan(block,"(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
+    evidence=(block.match(/[^\n]*(?:大人|小学生|中学生|高校生|お子様|子供|こども|児童|幼児|乳児|未就学)[^\n]*?\d+[\s　]*[名人][^\n]*/g)||[]).map(s=>s.trim()).join("  ／  ");
+  };
+  // ★サイトごとに「読む場所」を固定。ほかの場所（料金明細・部屋説明・男女内訳）は読まない。
   if(site==="楽天トラベル"||site==="一休"){
-    // 【まとめ行だけ】を読む（料金明細・男女内訳は読まない）。例:「人数：大人2人/子供2名(内訳…)」
-    // 子供は「子供○名」の“総数”をそのまま使い、括弧内の幼児/小学生の内訳は分けずに「子供」でまとめる（美咲さん指定）。
+    // 固定＝「人数：…」（一休は「宿泊延べ人数：…」）の“その1行だけ”。子供は総数でまとめる。
     const line=(t.match(/(?:宿泊)?(?:延べ)?人数[\s　]*[:：][^\n]*/)||[""])[0];
     evidence=line.trim();
     const noParen=line.replace(/[(（][^)）]*[)）]/g,"");   // 括弧の内訳は使わない
     adults=parseInt((noParen.match(/大人[\s　]*(\d+)/)||[])[1]||0);
     kids=scan(noParen,"(?:子供|こども|児童)[^0-9]{0,4}(\\d+)");
-    if(kids===0) kids=scan(noParen,kidRe)+scan(noParen,infRe); // 「子供」表記がなければ小学生等をまとめて子供扱い
+    if(kids===0) kids=scan(noParen,kidRe)+scan(noParen,infRe);
     infants=0; kidsLabel="子供";
+  } else if(site==="じゃらん"){
+    // 固定＝「部屋数：」または「○部屋目」から、次の「■」/区切り線の手前までのお部屋割りだけ。
+    let block=t;
+    const s=block.search(/部屋数[\s　]*[:：]|[0-9０-９一二三四五六七八九]+\s*部屋目/);
+    if(s>=0) block=block.slice(s);
+    const e=block.search(/\n[\s　]*(?:■|━{3,}|-{3,}|＝{3,}|＿{3,})/);
+    if(e>0) block=block.slice(0,e);
+    readBlock(block);
   } else {
-    // 489ban / じゃらん / HP / 不明：【お部屋割りの部分だけ】を読む（料金明細を最初から切り離す）。
-    // ①料金・決済以降を切り落とす→②お部屋割り/部屋数から後ろに絞る→③各区分の後ろにある最初のN名を合算（複数室は合算）。
-    let region=t;
-    const priceIdx=region.search(/▼\s*ご宿泊料金|■\s*料金|■\s*決済|■\s*ポイント|■\s*クーポン|料金明細|【料金/);
-    if(priceIdx>0) region=region.slice(0,priceIdx);
-    const roomIdx=region.search(/▼?\s*お?部屋割り|部屋数[\s　]*[:：]|ご利用人数|人数内訳/);
-    if(roomIdx>=0) region=region.slice(roomIdx);
-    adults = scan(region,"大人[^\\n名人]*?(\\d+)[\\s　]*[名人]");
-    kids   = scan(region,"(?:小学生|小学校[低中高]学年|中学生|高校生|お子様|子供|こども|小人)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
-    infants= scan(region,"(?:幼児|乳児|未就学児?)[^\\n名人]*?(\\d+)[\\s　]*[名人]");
-    evidence=(region.match(/[^\n]*(?:大人|小学生|中学生|高校生|お子様|子供|こども|児童|幼児|乳児|未就学)[^\n]*?\d+[\s　]*[名人][^\n]*/g)||[]).map(s=>s.trim()).join("  ／  ");
+    // 489ban / HP直予約 / 不明：固定＝「▼お部屋割り」から次の「▼」の手前までのお部屋割りだけ。
+    let block=t;
+    const s=block.search(/▼?\s*お?部屋割り/);
+    if(s>=0){ block=block.slice(s); const e=block.search(/\n[\s　]*▼/); if(e>0) block=block.slice(0,e); }
+    else { const p=block.search(/▼\s*ご宿泊料金|■\s*料金|■\s*決済|料金明細/); if(p>0) block=block.slice(0,p); } // お部屋割りが無い形の保険
+    readBlock(block);
   }
   return {adults,kids,infants,kidsLabel,evidence};
 }
