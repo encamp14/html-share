@@ -64,7 +64,7 @@
 <header>
   <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
   <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
-  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-24 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
+  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-25 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
 </header>
 
 <div class="tabs">
@@ -658,7 +658,7 @@ function generate(){
   else if(tt) hClause="標高約830メートルの場所（"+tt+"）";
   else hClause=heightData.other||"東京スカイツリーのてっぺんより200メートル高い標高約830メートルの場所";
   let heightSentence;
-  if(isLocal) heightSentence="当施設は標高約830メートルの高台にありますので、平野部よりさらに1～2度低くなります。";
+  if(isLocal) heightSentence="当施設は標高約830メートルの場所にあるので、これより1～2度低くなります。";
   else heightSentence="当施設は"+hClause+"にあるので、これより1～2度低くなります。";
   const nrm=MATSU_NORMALS[mm];
   const dd = dm?parseInt(dm[3]):0;
