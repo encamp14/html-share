@@ -64,7 +64,7 @@
 <header>
   <h1>📧 メール返信係 <span style="font-weight:400;font-size:.9rem">— 予約歓迎メールメーカー</span></h1>
   <p>予約通知を貼る → 柳さんスタイルの歓迎メールが完成。データはこのMacの中だけ（外に送信しません）</p>
-  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-09-25 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
+  <p style="font-size:.78rem;color:#9a8d8a;margin-top:2px">版 2026-11-07 ｜ 画面が古いときは <strong>⌘＋Shift＋R</strong>（強制再読み込み）</p>
 </header>
 
 <div class="tabs">
@@ -100,12 +100,34 @@
       </div>
 
       <h2>② 読み取り結果（直せます）</h2>
+      <div class="card" style="border:2px solid var(--rose);background:var(--rose-bg);margin-bottom:12px">
+        <label style="font-weight:700;color:var(--rose-dark);font-size:1rem">👥 人数（通知を見て確認・修正してください）</label>
+        <div id="count-ev" class="note" style="margin:4px 0 10px">予約通知を貼って「🔍 読み取る」を押すと、ここに自動で入ります。</div>
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+          <div style="text-align:center"><div style="font-size:.82rem;color:var(--green);margin-bottom:3px;font-weight:600">大人</div>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff">
+              <button type="button" onclick="bumpCount('adult',-1)" style="border:none;background:#f3edee;width:36px;height:40px;font-size:1.3rem;cursor:pointer">−</button>
+              <input type="number" id="n-adult" min="0" value="0" onchange="syncCount()" style="width:52px;height:40px;border:none;text-align:center;font-size:1.15rem;font-weight:700;-moz-appearance:textfield">
+              <button type="button" onclick="bumpCount('adult',1)" style="border:none;background:#f3edee;width:36px;height:40px;font-size:1.3rem;cursor:pointer">＋</button></span></div>
+          <div style="text-align:center"><div id="kid-label" style="font-size:.82rem;color:var(--green);margin-bottom:3px;font-weight:600">子供</div>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff">
+              <button type="button" onclick="bumpCount('kid',-1)" style="border:none;background:#f3edee;width:36px;height:40px;font-size:1.3rem;cursor:pointer">−</button>
+              <input type="number" id="n-kid" min="0" value="0" onchange="syncCount()" style="width:52px;height:40px;border:none;text-align:center;font-size:1.15rem;font-weight:700;-moz-appearance:textfield">
+              <button type="button" onclick="bumpCount('kid',1)" style="border:none;background:#f3edee;width:36px;height:40px;font-size:1.3rem;cursor:pointer">＋</button></span></div>
+          <div style="text-align:center"><div style="font-size:.82rem;color:var(--green);margin-bottom:3px;font-weight:600">幼児</div>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff">
+              <button type="button" onclick="bumpCount('infant',-1)" style="border:none;background:#f3edee;width:36px;height:40px;font-size:1.3rem;cursor:pointer">−</button>
+              <input type="number" id="n-infant" min="0" value="0" onchange="syncCount()" style="width:52px;height:40px;border:none;text-align:center;font-size:1.15rem;font-weight:700;-moz-appearance:textfield">
+              <button type="button" onclick="bumpCount('infant',1)" style="border:none;background:#f3edee;width:36px;height:40px;font-size:1.3rem;cursor:pointer">＋</button></span></div>
+          <div style="font-weight:700;font-size:1.15rem;padding-bottom:8px;color:var(--rose-dark)">＝ 合計 <span id="count-total">0</span>名</div>
+        </div>
+        <div class="note" style="margin-top:8px">💡 この数字が<strong>そのままメールに入ります</strong>。通知と合っているか確認して、違えば＋/−で直してください（合計は自動）。</div>
+      </div>
       <div class="card">
         <div class="fields">
           <label>宛名</label><input type="text" id="f-name" placeholder="例：山田花子（フルネーム）">
           <label>宿泊日</label><input type="text" id="f-date" placeholder="例：2026/07/26">
-          <label>人数の内訳</label><input type="text" id="f-people" placeholder="例：大人2名・小学生2名">
-          <label>合計人数</label><input type="text" id="f-total" placeholder="例：4">
+          <input type="hidden" id="f-people"><input type="hidden" id="f-total">
           <label>出発地（市）</label><input type="text" id="f-from" placeholder="例：横浜（長野県内なら「地元」）">
           <label>都道府県</label><input type="text" id="f-pref" placeholder="例：神奈川（標高のたとえに使用）">
           <label>お客様メール</label><input type="text" id="f-email" placeholder="返信の宛先（489banではなくお客様本人）">
@@ -510,6 +532,27 @@ function countGuests(t, site){
   }
   return {adults,kids,infants,kidsLabel,evidence};
 }
+// 人数の確定欄（大人/子供/幼児）→ メールが使う f-people・f-total を作る。ここが人数の“確定値”。
+function syncCount(){
+  const a=Math.max(0,parseInt(document.getElementById("n-adult").value)||0);
+  const k=Math.max(0,parseInt(document.getElementById("n-kid").value)||0);
+  const i=Math.max(0,parseInt(document.getElementById("n-infant").value)||0);
+  const kl=document.getElementById("kid-label").textContent||"小学生";
+  const parts=[];
+  if(a)parts.push("大人"+a+"名");
+  if(k)parts.push(kl+k+"名");
+  if(i)parts.push("幼児"+i+"名");
+  document.getElementById("f-people").value=parts.join("・");
+  const tot=a+k+i;
+  document.getElementById("f-total").value=tot||"";
+  document.getElementById("count-total").textContent=tot;
+}
+function bumpCount(which,delta){
+  const id={adult:"n-adult",kid:"n-kid",infant:"n-infant"}[which];
+  const el=document.getElementById(id);
+  el.value=Math.max(0,(parseInt(el.value)||0)+delta);
+  syncCount();
+}
 function parseMail(){
   const t=document.getElementById("rawmail").value;
   if(!t.trim()){alert("予約通知を貼ってから押してください");return;}
@@ -567,20 +610,23 @@ function parseMail(){
   // プラン
   const plan=pick(/(?:\[?プラン\]?)[:：]\s*([^\n]+)/,t);
   // 反映
-  setV("f-name",name); setV("f-date",date); setV("f-people",people.join("・"));
-  setV("f-total",total||""); setV("f-from",from); setV("f-pref",pref); setV("f-email",email);
+  setV("f-name",name); setV("f-date",date); setV("f-from",from); setV("f-pref",pref); setV("f-email",email);
+  // 人数 → 確定欄（大人/子供/幼児）に入れる。ここが“確定値”で、そのままメールに入る（合計は自動）。
+  document.getElementById("n-adult").value=adults;
+  document.getElementById("n-kid").value=kids;
+  document.getElementById("n-infant").value=infants;
+  document.getElementById("kid-label").textContent=kidsLabel;
+  document.getElementById("count-ev").innerHTML = gc.evidence
+    ? "読み取り元：<span style='background:#fff3b0;padding:0 3px'>「"+esc(gc.evidence)+"」</span>　← 通知と見くらべて、違えば ＋/− で直してください"
+    : "⚠️ 人数を自動で読み取れませんでした。通知を見て ＋/− で入れてください。";
+  syncCount();
   // リピーター判定（過去のご宿泊）
   const pastLine=(t.match(/過去のご宿泊[^\n]*/)||[""])[0];
   const isRepeat=/過去に宿泊|以前.*宿泊|\d回目|リピート/.test(pastLine);
   setV("f-pet",pet); setV("f-celeb",celeb); setV("f-pickup",hasPickup(t)?"あり":""); setV("f-repeat",isRepeat?"あり":""); setV("f-plan",plan);
   // 警告（site は上部で判定済み）
   const w=[];
-  {
-    const peopleStr = people.length ? people.join("・") : "（人数を読み取れませんでした）";
-    const ev = gc.evidence ? "読み取り元：<span style='background:#fff3b0;padding:0 3px'>「"+esc(gc.evidence)+"」</span><br>" : "";
-    const siteStr = site ? "<strong>"+site+"</strong>の予約 ｜ " : "";
-    w.push("📮 "+siteStr+"人数 → <strong style='font-size:1.05rem'>"+peopleStr+"（合計"+total+"名）</strong><br>"+ev+"⚠️ <strong>この人数が通知と合っているか必ず確認を</strong>。違ったら下の「人数の内訳」を直すと本文にそのまま反映されます（合計は自動計算）。");
-  }
+  if(site) w.push("📮 <strong>"+site+"</strong>の予約通知として読み取りました。<strong>上の人数</strong>・宛名・宿泊日が合っているか確認してください。");
   if(!email) w.push("⚠️ お客様のメールアドレスが読み取れません。<strong>送信前に必ず正しい宛先を確認</strong>してください。");
   if(/現地決済/.test(t)) w.push("💡 現地決済のお客様です（当日キャンセル・不泊のリスク層。丁寧な歓迎メールが効きます）。");
   if(window.isIkyu) w.push("✏️ 一休は返信を<strong>5000文字以内</strong>で（下書きの下に文字数カウンターが出ます）。");
@@ -719,9 +765,9 @@ function generate(){
   L.push(c);
   // 4 夜（固定）※「エアコンの効いたテント」は夏（3〜8月）のみ。秋以降（9〜2月）は「快適なテント」。
   const tentPhrase = (mm>=3&&mm<=8) ? "エアコンの効いたテント" : "快適なテント";
-  L.push("夜になるとキャンプ場内は暖かな色の電飾が森の中できらめき、ロマンチックな雰囲気となっています。BBQスペースでゆっくりとお食事をご堪能いただき、"+tentPhrase+"で楽しいひとときをお過ごしください。天気が良ければ隣接する旅館のお風呂近くの「星の踊り場」から綺麗な星空を見ることもできます。");
+  L.push("夜になるとキャンプ場内は暖かな色の電飾が森の中できらめき、ロマンチックな雰囲気となっています。BBQスペースでゆっくりとお食事をご堪能いただき、"+tentPhrase+"で楽しいひとときをお過ごしください。"+((mm>=9||mm<=2)?"厚手の防寒具はこちらでご用意しております。":"")+"天気が良ければ隣接する旅館のお風呂近くの「星の踊り場」から綺麗な星空を見ることもできます。");
   // 5 アクティビティ（季節問わず統一。ボードゲーム無料貸出を案内）
-  L.push("場内には約70メートルのジップラインや大型トランポリンなどもあります。ボードゲーム類も無料で貸し出しておりますので、大いに遊んでいってください（＾＾）");
+  L.push("場内には約70メートルのジップラインや大型トランポリンの他、屋内のプレイルームもあります。ボードゲーム類も無料で貸し出しておりますので、大いに遊んでいってください（＾＾）");
   // 6 穂高（固定）
   L.push("当施設のすぐ横にあるみどり湖堰堤（徒歩2～3分）からは北アルプスの穂高連峰を望むことができますので、夕暮れ時や朝のお散歩がてら眺望をお楽しみください。この穂高連峰を平野部から見られるのは当施設のある塩尻市の一部だけです。");
   // 7 コンシェルジュ（固定）
@@ -925,6 +971,10 @@ function saveOverride(){
 }
 function clearAll(){
   ["rawmail","f-name","f-date","f-people","f-total","f-from","f-pref","f-email","f-pet","f-celeb","f-pickup","f-repeat","f-lastvisit","f-request","f-plan","output","to-disp","subj-disp"].forEach(id=>setV(id,""));
+  ["n-adult","n-kid","n-infant"].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById("count-total").textContent="0";
+  document.getElementById("kid-label").textContent="子供";
+  document.getElementById("count-ev").textContent="予約通知を貼って「🔍 読み取る」を押すと、ここに自動で入ります。";
   document.getElementById("warnings").innerHTML="";
   document.getElementById("sendinfo").style.display="none";
   document.getElementById("tempbox").style.display="none";
